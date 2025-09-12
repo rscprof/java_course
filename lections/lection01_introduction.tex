@@ -1,0 +1,403 @@
+% !TEX program = xelatex
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% ---------- Encoding & language (xelatex-friendly) ----------
+\usepackage{polyglossia}
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+
+\usepackage{fontspec}
+\setmainfont{CMU Serif}
+\setsansfont{CMU Sans Serif}
+\setmonofont{CMU Typewriter Text}
+
+% ---------- Common packages ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{csquotes}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.misc}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+
+% ---------- Listings (Java) ----------
+\lstdefinelanguage{JavaLite}{
+  language=Java,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{NavyBlue}\bfseries,
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{ForestGreen}\ttfamily
+}
+\lstset{
+  extendedchars=true,
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.2pt,
+  tabsize=2,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=6pt
+}
+
+% ---------- Title ----------
+\title{Введение в программирование на Java}
+\subtitle{Лекция 1: Обзор языков высокого уровня, синтаксис Java и инструменты (IntelliJ IDEA)}
+\author{Александр Глускер}
+\institute{РУТ МИИТ/ВИШ}
+\date{\today}
+
+% ---------- TOC at section start ----------
+\AtBeginSection[]{
+  \begin{frame}{Навигация по лекции}
+    \tableofcontents[currentsection, hideallsubsections]
+  \end{frame}
+}
+
+\begin{document}
+
+% ================== Title ==================
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ================== Agenda ==================
+\begin{frame}{Содержание}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \item Обзор языков высокого уровня
+        \item Java сегодня: роль языка и JVM
+        \item Инструменты: JDK, IntelliJ IDEA, CLI, JShell
+        \item Синтаксис Java: базовые конструкции
+        \item Ввод/вывод и обработка ошибок
+        \item Массивы и методы (без ООП)
+        \item Итоги и мини-практика
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{block}{Цели}
+        \begin{itemize}
+          \item Понять место Java и философию JVM
+          \item Установить JDK и настроить IntelliJ IDEA
+          \item Научиться писать и запускать простые программы
+          \item Подготовить базу к занятию по ООП
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% =====================================================
+\section{Обзор языков высокого уровня}
+% =====================================================
+
+\begin{frame}{Высокоуровневые языки: карта местности}
+  \begin{itemize}
+    \item \textbf{Типизация:} статическая (Java, C\#), динамическая (Python, JS)
+    \item \textbf{Компиляция:} в машинный код (Go, Rust, Kotlin), 
+    в байткод под VM (Java, Kotlin, Scala), JIT/интерпретация (Python/JS)
+    \item \textbf{Управление памятью:} сборка мусора (Java, C\#), 
+    владение/заимствование (Rust), ручная (C)
+    \item \textbf{Экосистемы:} JVM (Java/Kotlin/Scala), 
+    .NET, нативные (C/C++/Rust), веб (JS/TS)
+  \end{itemize}
+  \begin{block}{Почему нам Java}
+    \begin{itemize}
+      \item Сильная статическая типизация, крупная экосистема, стабильные LTS-релизы
+      \item Универсальность: бэкенд (но...), инструменты  (но...), Android (исторически), 
+      desktop/CLI  (но...)
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% =====================================================
+\section{Java сегодня: роль языка и JVM}
+% =====================================================
+
+\begin{frame}{Java в 2025: трезвый взгляд}
+  \begin{itemize}
+    \item \textbf{Сервер/Enterprise:} де-факто стандарт (Spring, Jakarta EE)
+    \item \textbf{Android:} \underline{Kotlin-first} для нового кода; 
+    Java остаётся в существующих проектах и библиотеках
+    \item \textbf{JVM-платформа:} множество языков (Kotlin, Scala и др.) 
+    на одном рантайме
+  \end{itemize}
+  \begin{block}{Версии языка}
+    \begin{itemize}
+      \item LTS: 17 (2021), 21 (2023), \emph{25 (план — сентябрь 2025)}
+    \end{itemize}
+  \end{block}
+  \begin{block}{Философия JVM}
+    \begin{itemize}
+      \item \emph{Write once, run anywhere:} компиляция в байткод, исполнение на JVM
+      \item HotSpot JIT оптимизирует «на лету», есть современные GC
+      \item OpenJDK — \emph{референсная реализация} Java SE
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Экосистема Java кратко}
+  \small
+  \begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Компонент} & \textbf{Что это} \\
+    \midrule
+    JDK & Компилятор \texttt{javac}, рантайм, инструменты (\texttt{jar}, 
+    \texttt{javadoc}, \texttt{jshell}) \\
+    JVM (HotSpot) & Виртуальная машина: загрузка классов, JIT, GC \\
+    OpenJDK & Открытая референсная реализация Java SE \\
+    LTS & Версии с длительной поддержкой (17/21/25) \\
+    Билд-системы & Maven/Gradle (зависимости, сборка, тесты) \\
+    IDE & IntelliJ IDEA (Community/Ultimate) \\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+% =====================================================
+\section{Инструменты: JDK, IntelliJ IDEA, CLI, JShell}
+% =====================================================
+
+\begin{frame}{Установка и настройка}
+  \begin{enumerate}
+    \item Установите \textbf{IntelliJ IDEA Community} (хватает для чистой Java, Maven/Gradle)
+    \item В IDEA: \texttt{New Project} $\rightarrow$ \texttt{Java} $\rightarrow$, укажите название проекта (English), остальное по умолчанию
+    \item Запуск: зелёный треугольник слева от \texttt{main}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{JShell: REPL для быстрых экспериментов}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+$ jshell
+jshell> int x = 2 + 2;
+x ==> 4
+jshell> "Hello, " + "Java"
+$2 ==> "Hello, Java"
+\end{lstlisting}
+  \begin{itemize}
+    \item Полезно для проверки выражений, без создания проекта
+  \end{itemize}
+\end{frame}
+
+% =====================================================
+\section{Синтаксис Java: база до ООП}
+% =====================================================
+
+\begin{frame}[fragile]{Структура минимальной программы}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+// Файл Main.java
+public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello, Java!");
+  }
+}
+\end{lstlisting}
+\begin{itemize}
+  \item Пока игнорируем ООП: мыслите о \texttt{class Main} как о контейнере для \texttt{main}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Комментарии, идентификаторы, литералы}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+// Однострочный комментарий
+/* Многострочный */
+/**
+ * Док-комментарий
+ */
+int answer = 42;
+double pi = 3.1415;
+char letter = 'A';
+String s = "Строка";
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Типы и переменные}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int i = 10; long L = 10L;
+double d = 2.5; float f = 2.5f;
+boolean ok = true;
+char c = 'Ж';
+String text = "Привет";
+var sum = i + 5; // локальное выведение типа (Java 10+)
+\end{lstlisting}
+\begin{block}{Замечания}
+  \begin{itemize}
+    \item \texttt{var} — только для локальных переменных; тип всё равно статический
+    \item Преобразования: явные касты, \texttt{(int) d}, и методы вроде \texttt{Integer.parseInt}
+  \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Операторы}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int a = 7, b = 3;
+int sum = a + b;     // + - * / %
+int mod = a % b;
+boolean gt = a > b;  // > < >= <= == !=
+boolean both = (a > 0) && (b > 0); // && || !
+a++; --b; // инкремент/декремент
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Условия: if/else и тернарный оператор}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int x = -3;
+if (x >= 0) {
+  System.out.println("Неотрицательное");
+} else {
+  System.out.println("Отрицательное");
+}
+String sign = (x >= 0) ? "non-negative" : "negative";
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{switch: классический и современный (Java 14+)}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+// Классический
+int day = 2;
+switch (day) {
+  case 1: System.out.println("Пн"); break;
+  case 2: System.out.println("Вт"); break;
+  default: System.out.println("Другое");
+}
+
+// Выражение switch (Java 14+)
+int n = 3;
+String name = switch (n) {
+  case 1 -> "Один";
+  case 2, 3 -> "Два или три";
+  default -> "Иное";
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Циклы: while, do-while, for, for-each}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int i = 0;
+while (i < 3) { System.out.println(i); i++; }
+
+int j = 0;
+do { System.out.println(j); j++; } while (j < 3);
+
+for (int k = 0; k < 3; k++) { System.out.println(k); }
+
+int[] arr = {1, 2, 3};
+for (int v : arr) { System.out.println(v); } // for-each
+\end{lstlisting}
+\end{frame}
+
+% =====================================================
+\section{Ввод/вывод и обработка ошибок}
+% =====================================================
+
+\begin{frame}[fragile]{Стандартный ввод: Scanner}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+import java.util.*;
+
+public class Main {
+  public static void main(String[] args) {
+    try (Scanner sc = new Scanner(System.in)) {
+      System.out.print("Введите целое число: ");
+      String line = sc.nextLine();        // читаем строку полностью
+      int x = Integer.parseInt(line.trim()); // парсим явно
+      System.out.println("Квадрат: " + Math.multiplyExact(x, x));
+    } catch (NumberFormatException e) {
+      System.out.println("Ошибка: введите целое число");
+    } catch (ArithmeticException e) {
+      System.out.println("Переполнение при вычислениях");
+    }
+  }
+}
+\end{lstlisting}
+\begin{block}{Почему так}
+  \begin{itemize}
+    \item Явный разбор строки избегает «ловушки» \texttt{nextInt()} + перевод строки
+    \item \texttt{Math.multiplyExact/addExact} корректно детектирует переполнение
+    \item С JDK 18 по умолчанию UTF-8 (файлы/строки) — меньше сюрпризов при I/O
+  \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Файлы: чтение/запись в одну строку (NIO)}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+import java.nio.file.*; import java.io.IOException;
+import java.util.*;
+
+public class Main {
+  public static void main(String[] args) throws IOException {
+    Path p = Path.of("data.txt");
+    Files.writeString(p, "Hello\n", java.nio.charset.StandardCharsets.UTF_8);
+    String content = Files.readString(p);
+    System.out.println(content);
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+% =====================================================
+\section{Массивы и методы (минимум до ООП)}
+% =====================================================
+
+\begin{frame}[fragile]{Массивы: создание и базовые операции}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int[] a = {3, 1, 4};
+int[] b = new int[5];        // заполнен нулями
+System.out.println(a.length);
+Arrays.sort(a);              // [1,3,4]
+int pos = Arrays.binarySearch(a, 3); // позиция 3
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Методы (статические функции)}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+public class Main {
+  static int sum(int x, int y) {
+    return Math.addExact(x, y);
+  }
+  public static void main(String[] args) {
+    System.out.println(sum(2, 3));
+  }
+}
+\end{lstlisting}
+\begin{block}{Важно}
+  \begin{itemize}
+    \item Пока обходимся \texttt{static} методами; принципы ООП — на следующем занятии
+    \item Перегрузка методов разрешена (одинаковое имя, разные параметры)
+  \end{itemize}
+\end{block}
+\end{frame}
+
+% =====================================================
+\section{Итоги}
+% =====================================================
+
+\begin{frame}{Что нужно запомнить}
+  \begin{itemize}
+    \item Java = язык + платформа JVM; OpenJDK — референсная реализация
+    \item Актуальные LTS: 17, 21, (план) 25; для курса — JDK 21
+    \item IntelliJ IDEA Community достаточно для старта; JShell для экспресс-проверок
+    \item База синтаксиса: типы, операторы, if/switch, циклы, массивы, методы
+    \item Ввод/вывод: \texttt{Scanner} + явный парсинг; \texttt{Files.readString/writeString}
+  \end{itemize}
+\end{frame}
+
+
+\end{document}
