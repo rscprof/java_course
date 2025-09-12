@@ -14,12 +14,12 @@ jobs:
       - name: Compile LaTeX document #2
         uses: dante-ev/latex-action@latest
         with:
-          root_file: problems.tex
+          root_file: problems/problems.tex
           compiler: pdflatex
       - name: Compile LaTeX document #3
         uses: dante-ev/latex-action@latest
         with:
-          root_file: problems.tex
+          root_file: problems/problems.tex
           compiler: pdflatex
       - name: create directory
         shell: bash
