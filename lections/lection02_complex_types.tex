@@ -1,0 +1,470 @@
+% !TEX program = xelatex
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% ---------- Encoding & language (xelatex-friendly) ----------
+\usepackage{polyglossia}
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+
+\usepackage{fontspec}
+\setmainfont{CMU Serif}
+\setsansfont{CMU Sans Serif}
+\setmonofont{CMU Typewriter Text}
+
+% ---------- Common packages ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{csquotes}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.misc}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+
+% ---------- Listings (Java) ----------
+\lstdefinelanguage{JavaLite}{
+  language=Java,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\color{NavyBlue}\bfseries,
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{ForestGreen}\ttfamily
+}
+\lstset{
+  extendedchars=true,
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  showstringspaces=false,
+  frame=single,
+  framerule=0.2pt,
+  tabsize=2,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=6pt
+}
+
+% ---------- Title ----------
+\title{Типы данных в Java: от примитивов до коллекций}
+\subtitle{Лекция 2: Примитивы, ссылки, строки, StringBuilder, базовые коллекции}
+\author{Александр Глускер}
+\institute{РУТ МИИТ/ВИШ}
+\date{\today}
+
+% ---------- TOC at section start ----------
+\AtBeginSection[]{
+  \begin{frame}{Навигация по лекции}
+    \tableofcontents[currentsection, hideallsubsections]
+  \end{frame}
+}
+
+\begin{document}
+
+% ================== Title ==================
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ================== Agenda ==================
+\begin{frame}{Содержание}
+  \begin{columns}[T,onlytextwidth]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \item Примитивные и ссылочные типы: стек vs куча
+        \item Передача аргументов по значению, семантика ссылок
+        \item Автоупаковка и обёртки: мост к коллекциям
+        \item String: неизменяемость, пул строк, сравнение через equals
+        \item StringBuilder: эффективные мутации, внутренний буфер
+        \item Коллекции: List, Set, Map — интерфейсы и реализации
+        \item Практика: типичные ошибки и анти-паттерны
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{block}{Цели}
+        \begin{itemize}
+          \item Различать хранение в стеке и куче
+          \item Понимать семантику передачи ссылок
+          \item Использовать автоупаковку осознанно
+          \item Избегать ошибок сравнения строк
+          \item Выбирать StringBuilder при конкатенации в цикле
+          \item Применять коллекции вместо массивов
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% =====================================================
+\section{Примитивные и ссылочные типы: стек vs куча}
+% =====================================================
+
+\begin{frame}{Примитивные типы: хранение в стеке}
+  \small
+  \begin{tabularx}{\linewidth}{l X}
+    \toprule
+    \textbf{Тип} & \textbf{Размер и диапазон} \\
+    \midrule
+    \texttt{byte} & 1 байт, -128 до 127 \\
+    \texttt{short} & 2 байта, -32768 до 32767 \\
+    \texttt{int} & 4 байта, -2³¹ до 2³¹-1 \\
+    \texttt{long} & 8 байт, -2⁶³ до 2⁶³-1 \\
+    \texttt{float} & 4 байта, IEEE 754 \\
+    \texttt{double} & 8 байт, IEEE 754 (по умолчанию) \\
+    \texttt{char} & 2 байта, UTF-16 \\
+    \texttt{boolean} & не определён явно, обычно 1 байт \\
+    \bottomrule
+  \end{tabularx}
+  \begin{itemize}
+    \item Хранятся \textbf{в стеке вызовов (call stack)} — быстро, локально, автоматически освобождаются
+    \item Не могут быть \texttt{null}, не являются объектами
+    \item Копируются при присваивании и передаче в метод
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Ссылочные типы: хранение в куче}
+  \begin{itemize}
+    \item Все объекты (включая массивы, строки, экземпляры классов) размещаются в \textbf{куче (heap)}
+    \item Переменная-ссылка хранится в стеке и содержит \textbf{адрес} объекта в куче
+    \item Объекты управляются сборщиком мусора (GC) — освобождаются, когда становятся недостижимы
+    \item Ссылка может быть \texttt{null} — не указывает ни на какой объект
+  \end{itemize}
+  \begin{block}{Пример}
+    \begin{itemize}
+      \item \texttt{String s = new String("Hello");} — \texttt{s} (в стеке) → объект \texttt{String} (в куче)
+      \item \texttt{int[] arr = new int[10];} — \texttt{arr} (в стеке) → массив (в куче)
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Глубже: стек вызовов и кадры}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+void example() {
+  int x = 10;               // x — в стеке текущего кадра
+  String s = "Java";        // s — ссылка в стеке, объект — в куче
+  modify(x, s);
+}
+
+void modify(int a, String t) {
+  // a — копия x (в новом кадре стека)
+  // t — копия ссылки s (указывает на тот же объект в куче)
+  t = t + "!"; // создаётся НОВЫЙ объект в куче, t теперь ссылается на него
+}
+\end{lstlisting}
+  \begin{block}{Ключевое}
+    Java всегда передаёт аргументы \textbf{по значению}:  
+    — для примитивов — копия значения,  
+    — для ссылок — копия адреса (но объект в куче — один).
+  \end{block}
+\end{frame}
+
+% =====================================================
+\section{Автоупаковка и обёртки: мост к коллекциям}
+% =====================================================
+
+\begin{frame}[fragile]{Автоупаковка: преобразование примитив ↔ объект}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+int x = 42;
+Integer obj = x;           // автоупаковка: int → Integer (new Integer(x) до Java 9, кэширование после)
+int y = obj;               // автораспаковка: Integer → int
+
+// В коллекциях — только объекты:
+List<Integer> list = new ArrayList<>();
+list.add(100);             // автоупаковка: 100 → Integer.valueOf(100)
+int first = list.get(0);   // автораспаковка: Integer → int
+\end{lstlisting}
+  \begin{block}{Важные детали}
+    \begin{itemize}
+      \item \texttt{ArrayList<int>} — \textbf{недопустимо} на уровне компиляции
+      \item \texttt{Integer} — класс-обёртка, наследник \texttt{Object}
+      \item Кэширование значений от -128 до 127 (спецификация JLS)
+      \item \texttt{Integer a = 127; Integer b = 127; a == b → true} (из-за кэша), но \texttt{a = 128; b = 128; a == b → false}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Опасности автораспаковки: NullPointerException}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+List<Integer> numbers = new ArrayList<>();
+numbers.add(null);         // допустимо — null-ссылка
+
+// Попытка распаковать null:
+int value = numbers.get(0); // ← java.lang.NullPointerException!
+
+// Безопасная альтернатива:
+Integer boxed = numbers.get(0);
+if (boxed != null) {
+  int safe = boxed;
+}
+\end{lstlisting}
+  \begin{block}{Рекомендация}
+    Избегайте \texttt{null} в коллекциях примитивных обёрток. Используйте \texttt{Optional<Integer>} или явную проверку.
+  \end{block}
+\end{frame}
+
+% =====================================================
+\section{String: неизменяемость, пул строк, equals}
+% =====================================================
+
+\begin{frame}[fragile]{String: immutable объект в куче}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+String s1 = "Hello";           // литерал — попадает в пул строк (String Pool)
+String s2 = "Hello";           // ссылается на тот же объект в пуле
+String s3 = new String("Hello"); // НОВЫЙ объект в куче, вне пула
+String s4 = s1.toUpperCase();  // НОВЫЙ объект — "HELLO"
+
+System.out.println(s1 == s2);  // true — один объект в пуле
+System.out.println(s1 == s3);  // false — разные объекты
+System.out.println(s1.equals(s3)); // true — содержание идентично
+\end{lstlisting}
+  \begin{block}{Архитектурные следствия}
+    \begin{itemize}
+      \item Безопасность в многопоточной среде — не требует синхронизации
+      \item Экономия памяти за счёт пула строк
+      \item Каждая операция возвращает \textbf{новый объект} → дорого при частом изменении
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Сравнение: \texttt{==} vs \texttt{.equals()}}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+String input = new Scanner(System.in).nextLine();
+
+// ❌ Опасная ошибка:
+if (input == "exit") { ... } // сравнивает адреса, почти всегда false
+
+// ✅ Правильно:
+if ("exit".equals(input)) { ... } // сравнивает содержимое, безопасно даже при null
+
+// Альтернатива с защитой от null:
+if (input != null && input.equals("exit")) { ... }
+\end{lstlisting}
+  \begin{block}{Правило}
+    \texttt{==} — сравнение \textbf{ссылок} (адресов в памяти),  
+    \texttt{.equals()} — сравнение \textbf{логического содержания} (переопределён в \texttt{String}).
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Полезные методы String (java.lang.String)}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+String text = "  Java 17 is Great!  ";
+
+text.length();              // 21 — количество символов (char)
+text.charAt(2);             // 'v' — символ по индексу
+text.substring(2, 6);       // "va 1" — [beginIndex, endIndex)
+text.indexOf("17");         // 6 — позиция подстроки
+text.replace("Great", "Cool"); // "  Java 17 is Cool!  "
+text.trim();                // "Java 17 is Great!" — удаляет пробелы по краям
+text.split("\\s+");         // ["Java", "17", "is", "Great!"] — регулярное выражение
+text.toLowerCase();         // "  java 17 is great!  "
+text.startsWith("  J");     // true
+text.endsWith("!  ");       // true
+\end{lstlisting}
+\end{frame}
+
+% =====================================================
+\section{StringBuilder: эффективные мутации, внутренний буфер}
+% =====================================================
+
+\begin{frame}[fragile]{StringBuilder: изменяемый аналог String}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+StringBuilder sb = new StringBuilder(); // начальная ёмкость — 16 символов
+sb.append("Hello");
+sb.append(" ");
+sb.append("World");
+String result = sb.toString(); // "Hello World" — неизменяемая строка
+
+// Цепочка вызовов:
+sb.append("!").append("\n").append("Java").append(21);
+\end{lstlisting}
+  \begin{block}{Внутреннее устройство}
+    \begin{itemize}
+      \item Инкапсулирует изменяемый \texttt{char[]} буфер в куче
+      \item При переполнении — создаётся новый буфер с увеличенной ёмкостью (x2)
+      \item Все операции — \textbf{мутирующие}, не создают промежуточные объекты
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Производительность: StringBuilder vs String+}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+// ❌ Анти-паттерн: O(n²) — создаётся n временных строк
+String s = "";
+for (int i = 0; i < 10000; i++) {
+  s = s + i; // каждый + → new String → копирование всего предыдущего
+}
+
+// ✅ Оптимально: O(n) — мутирует один буфер
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 10000; i++) {
+  sb.append(i);
+}
+String result = sb.toString();
+\end{lstlisting}
+  \begin{block}{Рекомендация}
+    Используйте \texttt{StringBuilder} при конкатенации \textbf{в цикле} или при сборке строки из многих частей.  
+    Для 2–3 конкатенаций — \texttt{+} допустим (компилятор может сам оптимизировать в \texttt{StringBuilder}).
+  \end{block}
+\end{frame}
+
+% =====================================================
+\section{Коллекции: List, Set, Map — интерфейсы и реализации}
+% =====================================================
+
+\begin{frame}{Иерархия коллекций: java.util.Collection}
+  \begin{itemize}
+    \item \texttt{Collection} — корневой интерфейс (не включает \texttt{Map})
+    \item \texttt{List} — упорядоченная коллекция, допускает дубликаты, доступ по индексу
+    \item \texttt{Set} — неупорядоченная, уникальные элементы, нет индексов
+    \item \texttt{Map} — не наследует \texttt{Collection}, хранит пары \texttt{ключ→значение}, ключи уникальны
+  \end{itemize}
+  \begin{block}{Стандартные реализации}
+    \begin{itemize}
+      \item \texttt{List} → \texttt{ArrayList} (массив с динамическим ростом)
+      \item \texttt{Set} → \texttt{HashSet} (хеш-таблица, O(1) вставка/поиск)
+      \item \texttt{Map} → \texttt{HashMap} (хеш-таблица, O(1) операции)
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{List: ArrayList — динамический массив}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+List<String> names = new ArrayList<>(); // diamond operator (Java 7+)
+names.add("Alice");    // [Alice]
+names.add("Bob");      // [Alice, Bob]
+names.add(0, "Eve");   // [Eve, Alice, Bob] — вставка по индексу
+names.set(1, "Carol"); // [Eve, Carol, Bob] — замена
+names.remove("Bob");   // [Eve, Carol]
+
+System.out.println(names.get(0));     // "Eve"
+System.out.println(names.size());     // 2
+System.out.println(names.contains("Eve")); // true
+
+// Итерация — for-each (рекомендуется):
+for (String name : names) {
+  System.out.println(name);
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Set: HashSet — уникальность через хеш}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+Set<String> tags = new HashSet<>();
+tags.add("java");      // true — добавлено
+tags.add("spring");    // true — добавлено
+tags.add("java");      // false — дубликат, игнорируется
+
+System.out.println(tags.size());       // 2
+System.out.println(tags.contains("java")); // true
+
+// Итерация — порядок не гарантирован!
+for (String tag : tags) {
+  System.out.println(tag);
+}
+
+// Удаление:
+tags.remove("spring");
+\end{lstlisting}
+  \begin{block}{Важно}
+    Для корректной работы \texttt{HashSet} объекты должны корректно реализовывать \texttt{equals()} и \texttt{hashCode()} — пока используем \texttt{String}, где это сделано.
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Map: HashMap — ассоциативный массив}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+Map<String, Integer> scores = new HashMap<>();
+scores.put("Alice", 95);     // добавление
+scores.put("Bob", 87);
+scores.put("Alice", 98);     // обновление значения по ключу
+
+System.out.println(scores.get("Alice")); // 98
+System.out.println(scores.containsKey("Bob")); // true
+System.out.println(scores.size());       // 2
+
+// Удаление:
+scores.remove("Bob");
+
+// Итерация по ключам:
+for (String key : scores.keySet()) {
+  System.out.println(key + " → " + scores.get(key));
+}
+
+// Итерация по записям (предпочтительно):
+for (Map.Entry<String, Integer> entry : scores.entrySet()) {
+  System.out.println(entry.getKey() + " → " + entry.getValue());
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Фабричные методы: неизменяемые коллекции (Java 9+)}
+\lstset{language=JavaLite}
+\begin{lstlisting}
+// Создание маленьких, неизменяемых коллекций — удобно и безопасно
+List<String> colors = List.of("red", "green", "blue");
+Set<Integer> primes = Set.of(2, 3, 5, 7);
+Map<String, String> config = Map.of(
+  "host", "localhost",
+  "port", "8080"
+);
+
+// Попытка модификации → UnsupportedOperationException
+colors.add("yellow"); // ← ошибка времени выполнения!
+
+// Для изменяемых коллекций из массива:
+List<String> fromArray = new ArrayList<>(Arrays.asList("A", "B"));
+\end{lstlisting}
+\end{frame}
+
+% =====================================================
+\section{Практика: типичные ошибки и анти-паттерны}
+% =====================================================
+
+\begin{frame}{Типичные ошибки: диагностика и профилактика}
+  \begin{block}{1. NullPointerException при автораспаковке}
+    \begin{itemize}
+      \item \texttt{List<Integer> list = Arrays.asList(1, null, 3);}
+      \item \texttt{int x = list.get(1);} → \texttt{NullPointerException}
+      \item \textbf{Решение}: избегайте \texttt{null} в коллекциях, проверяйте перед распаковкой
+    \end{itemize}
+  \end{block}
+  \begin{block}{2. Сравнение строк через ==}
+    \begin{itemize}
+      \item \texttt{String cmd = scanner.nextLine();}
+      \item \texttt{if (cmd == "quit") \{...\}} → почти всегда \texttt{false}
+      \item \textbf{Решение}: всегда \texttt{.equals()}, лучше \texttt{"quit".equals(cmd)} для защиты от \texttt{null}
+    \end{itemize}
+  \end{block}
+  \begin{block}{3. Конкатенация строк в цикле}
+    \begin{itemize}
+      \item \texttt{String result = "";}
+      \item \texttt{for (...) \{ result += item; \}} → квадратичная сложность
+      \item \textbf{Решение}: \texttt{StringBuilder}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Что нужно запомнить}
+  \begin{itemize}
+    \item Примитивы — в стеке, быстрые, не null; ссылки — адреса объектов в куче, могут быть null
+    \item Передача аргументов — всегда по значению (копия примитива или копия ссылки)
+    \item Автоупаковка — мост к коллекциям, но опасна при null
+    \item String — immutable, пул строк, сравнение ТОЛЬКО через \texttt{.equals()}
+    \item StringBuilder — mutable, эффективен при множественных изменениях
+    \item Коллекции: \texttt{ArrayList} (индексы, дубли), \texttt{HashSet} (уникальность), \texttt{HashMap} (ключи-значения)
+    \item Используйте фабричные методы (\texttt{List.of()}) для неизменяемых коллекций
+  \end{itemize}
+\end{frame}
+
+\end{document}
