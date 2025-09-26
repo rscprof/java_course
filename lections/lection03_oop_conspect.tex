@@ -1,0 +1,262 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\setlist{noitemsep,topsep=2pt}
+
+\title{Конспект по JLS 8}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Вложенные классы (inner, local и anonymous)}
+Inner class может быть nested:
+\begin{itemize}
+  \item enum class
+  \item record class
+  \item public class
+  \item abstract class
+  \item sealed class
+  \item final class
+  \item различие классов и интерфейсов
+  \item generic class
+  \item аннотации (посмотреть какие)
+\end{itemize}
+
+\section*{Члены класса}
+\begin{itemize}
+  \item поля (instance и class), могут быть \texttt{final} (нельзя менять значение), допускается инициализатор
+  \item методы (\texttt{final | abstract | native | synchronized}); перегрузка; абстрактные методы только в абстрактных классах; нельзя скрывать абстрактные методы
+  \item классы (static или inner)
+  \item интерфейсы
+  \item инициализаторы
+  \item статические инициализаторы
+  \item конструкторы (можно перегружать)
+\end{itemize}
+
+Члены класса:
+\begin{itemize}
+  \item декларированные
+  \item наследованные
+\end{itemize}
+
+\section*{Access modifiers}
+\begin{itemize}
+  \item public
+  \item protected
+  \item private
+\end{itemize}
+
+\section*{Наследование}
+Можно скрывать члены-интерфейсы и члены-классы, а также скрывать методы, реализовывать их и делать перегрузку (имеются в виду члены, объявленные в реализованных интерфейсах и наследованных классах).
+
+\section*{Синтаксис}
+
+\textbf{ClassDeclaration:}
+\begin{itemize}
+  \item NormalClassDeclaration
+  \item EnumDeclaration
+  \item RecordDeclaration
+\end{itemize}
+
+\textbf{NormalClassDeclaration:}
+\begin{verbatim}
+{ClassModifier} class TypeIdentifier [TypeParameters]
+[ClassExtends] [ClassImplements] [ClassPermits] ClassBody
+\end{verbatim}
+
+Нельзя называть классы так же, как окружающие их другие классы/интерфейсы.
+
+\textbf{ClassModifier:}
+\begin{verbatim}
+(one of)
+Annotation public protected private
+abstract static final sealed non-sealed
+\end{verbatim}
+
+\begin{itemize}
+  \item public — только для top-level и классов-членов, не для локальных или анонимных
+  \item protected | private — только для классов-членов
+  \item static — только для классов-членов
+\end{itemize}
+
+Нельзя повторять модификаторы или использовать несколько из списка \texttt{private|protected|public}. Аналогично с \texttt{sealed|non-sealed|final}. Нельзя совмещать \texttt{private + final}.
+
+\begin{itemize}
+  \item \texttt{non-sealed} нужен, чтобы можно было свободно наследовать класс-наследник \texttt{sealed}
+  \item \texttt{enum class} автоматически \texttt{final} или \texttt{sealed}
+  \item \texttt{record class} автоматически \texttt{final}
+  \item local enum и record class — автоматически \texttt{static}
+  \item local и anonymous class — не могут быть \texttt{static}
+\end{itemize}
+
+\section*{TypeParameters}
+\begin{verbatim}
+<TypeParameterList>
+TypeParameterList:
+TypeParameter {, TypeParameter}
+
+TypeParameter:
+{TypeParameterModifier} TypeIdentifier [TypeBound]
+TypeParameterModifier:
+Annotation
+TypeBound:
+extends TypeVariable
+extends ClassOrInterfaceType {AdditionalBound}
+AdditionalBound:
+& InterfaceType
+\end{verbatim}
+
+\begin{itemize}
+  \item Нельзя делать циклические зависимости
+  \item \texttt{getClass()} даёт одинаковый результат для всех вариантов параметризации одного класса
+  \item generic class не может реализовывать \texttt{Throwable}
+\end{itemize}
+
+\section*{ClassExtends}
+\begin{verbatim}
+extends ClassType
+\end{verbatim}
+\begin{itemize}
+  \item enum может наследоваться только от enum
+  \item record — только от record
+\end{itemize}
+
+\section*{ClassImplements}
+\begin{verbatim}
+implements InterfaceTypeList
+InterfaceTypeList:
+InterfaceType {, InterfaceType}
+\end{verbatim}
+
+\begin{itemize}
+  \item Нельзя реализовывать две реализации (generic) одного интерфейса
+  \item Если есть методы сразу в двух интерфейсах, то они реализуются оба
+\end{itemize}
+
+\section*{ClassPermits}
+\begin{verbatim}
+permits TypeName {, TypeName}
+\end{verbatim}
+\begin{itemize}
+  \item \texttt{permits} можно указывать только для sealed-классов
+  \item в списке явно перечисляются наследники
+\end{itemize}
+
+\section*{ClassBody}
+\begin{verbatim}
+{ {ClassBodyDeclaration} }
+ClassBodyDeclaration:
+ClassMemberDeclaration
+InstanceInitializer
+StaticInitializer
+ConstructorDeclaration
+ClassMemberDeclaration:
+FieldDeclaration
+MethodDeclaration
+ClassDeclaration
+InterfaceDeclaration
+\end{verbatim}
+
+\section*{Object}
+Методы класса \texttt{Object}:
+\begin{itemize}
+  \item \texttt{clone()} — возвращает копию объекта
+  \item \texttt{equals(Object obj)} — проверка равенства
+  \item \texttt{finalize()} — \texttt{deprecated}, будет удалён
+  \item \texttt{getClass()} — возвращает runtime-класс объекта
+  \item \texttt{hashCode()} — возвращает hash
+  \item \texttt{notify()}, \texttt{notifyAll()}, \texttt{wait()} и варианты — синхронизация
+  \item \texttt{toString()} — строковое представление
+\end{itemize}
+
+Контракты:
+\begin{itemize}
+  \item equals/hashCode — рефлексивность, симметричность, транзитивность, консистентность, неравенство с null
+  \item clone — отдельный контракт
+\end{itemize}
+
+\url{https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html}
+
+\section*{Class<T>}
+\begin{verbatim}
+public final class Class<T>
+extends Object
+implements Serializable, GenericDeclaration, Type,
+AnnotatedElement, TypeDescriptor.OfField<Class<?>>, Constable
+\end{verbatim}
+
+\noindent Методы и свойства \texttt{Class<T>} приведены в спецификации.
+
+\section*{Конструкторы и инициализаторы}
+\begin{itemize}
+  \item не наследуются, как и private-члены
+\end{itemize}
+
+Тип метода определяется:
+\begin{itemize}
+  \item типовыми параметрами
+  \item типами параметров
+  \item возвращаемым типом
+  \item спецификацией \texttt{throw}
+\end{itemize}
+
+\section*{FieldDeclaration}
+\begin{verbatim}
+{FieldModifier} UnannType VariableDeclaratorList ;
+...
+FieldModifier:
+(one of)
+Annotation public protected private
+static final transient volatile
+\end{verbatim}
+
+\begin{itemize}
+  \item \texttt{transient} — поле не входит в persistent-состояние
+  \item \texttt{volatile} — согласованное состояние для всех потоков (без перестановки операций); не может быть \texttt{final}
+\end{itemize}
+
+\section*{MethodDeclaration}
+\begin{verbatim}
+{MethodModifier} MethodHeader MethodBody
+...
+MethodModifier:
+(one of)
+Annotation public protected private
+abstract static final synchronized native
+\end{verbatim}
+
+\begin{itemize}
+  \item нельзя создавать varargs-параметры для non-reifiable типов (если не использовать \texttt{@SafeVarargs} или \texttt{@SuppressWarnings})
+\end{itemize}
+
+\section*{InstanceInitializer}
+\begin{verbatim}
+Block
+\end{verbatim}
+
+\section*{StaticInitializer}
+\begin{verbatim}
+static Block
+\end{verbatim}
+
+\section*{ConstructorDeclaration}
+\begin{verbatim}
+{ConstructorModifier} ConstructorDeclarator [Throws] ConstructorBody
+...
+ConstructorInvocation:
+[TypeArguments] this ( [ArgumentList] ) ;
+[TypeArguments] super ( [ArgumentList] ) ;
+ExpressionName . [TypeArguments] super ( [ArgumentList] ) ;
+Primary . [TypeArguments] super ( [ArgumentList] ) ;
+\end{verbatim}
+
+Конструктор по умолчанию.
+
+\bigskip
+Остановились на \textbf{enum}.
+\end{document}
