@@ -526,4 +526,37 @@ CD-диски, а также выводить на экран содержимо
 После чего ему выводится на экран полная информация о получившемся велосипеде.
 \end{enumerate}
 
+\section{Семинар 4 (методы Object)}
+
+Создайте класс в соответствии с вашим вариантом, реализуйте корректно в нём
+методы \texttt{clone}, \texttt{equals}, \texttt{hashCode}, \texttt{toString}.
+
+\begin{enumerate}
+    \item Класс «Точка в 3D»: поля \texttt{x}, \texttt{y}, \texttt{z} (тип \texttt{double}).
+    \item Класс «Цвет в RGB»: поля \texttt{red}, \texttt{green}, \texttt{blue} (тип \texttt{int}, значения от 0 до 255).
+    \item Класс «Время суток»: поля \texttt{hour} (0–23), \texttt{minute} (0–59), \texttt{second} (0–59) (все — \texttt{int}).
+    \item Класс «Геокоординаты с высотой»: поля \texttt{latitude}, \texttt{longitude} (\texttt{double}), \texttt{altitude} (\texttt{int}, в метрах).
+    \item Класс «Дробь с единицей измерения»: поля \texttt{numerator}, \texttt{denominator} (\texttt{int}, знаменатель $\neq 0$), \texttt{unit} (\texttt{String}).
+    \item Класс «Комплексное число с меткой»: поля \texttt{re}, \texttt{im} (\texttt{double}), \texttt{label} (\texttt{String}).
+    \item Класс «Размер экрана с ориентацией»: поля \texttt{width}, \texttt{height} (\texttt{int}), \texttt{orientation} (\texttt{String}: \texttt{"portrait"} или \texttt{"landscape"}).
+    \item Класс «Погодные данные»: поля \texttt{temp} (температура в °C, \texttt{double}), \texttt{humidity} (влажность в \%, \texttt{int}), \texttt{pressure} (давление в мм рт.\,ст., \texttt{int}).
+    \item Класс «Скорость в 3D»: поля \texttt{vx}, \texttt{vy}, \texttt{vz} (тип \texttt{double}).
+    \item Класс «Пиксель»: поля \texttt{x}, \texttt{y} (\texttt{int}), \texttt{brightness} (\texttt{int}, 0–255).
+    \item Класс «Дата»: поля \texttt{day} (1–31), \texttt{month} (1–12), \texttt{year} (\texttt{int}, $\geq 1900$).
+    \item Класс «Валютная пара с курсом»: поля \texttt{base}, \texttt{quote} (\texttt{String}), \texttt{rate} (\texttt{double}).
+    \item Класс «Углы Эйлера»: поля \texttt{yaw}, \texttt{pitch}, \texttt{roll} (в градусах, \texttt{double}).
+    \item Класс «Физическая величина»: поля \texttt{value} (\texttt{double}), \texttt{unit} (\texttt{String}), \texttt{precision} (\texttt{int}, знаков после запятой).
+    \item Класс «Настройки звука»: поля \texttt{left}, \texttt{right}, \texttt{master} (\texttt{int}, 0–100).
+    \item Класс «Коэффициенты плоскости»: поля \texttt{a}, \texttt{b}, \texttt{c} (\texttt{double}, уравнение $ax + by + cz = 0$).
+    \item Класс «Шахматная позиция»: поля \texttt{file} (\texttt{char}, от \texttt{'a'} до \texttt{'h'}), \texttt{rank} (\texttt{int}, 1–8), \texttt{piece} (\texttt{String}, например \texttt{"king"}).
+    \item Класс «Интервал с единицей измерения»: поля \texttt{start}, \texttt{end} (\texttt{double}), \texttt{unit} (\texttt{String}).
+    \item Класс «Разрешение с частотой»: поля \texttt{width}, \texttt{height} (\texttt{int}), \texttt{refreshRate} (\texttt{int}, в Гц).
+    \item Класс «Именованный вектор»: поля \texttt{x}, \texttt{y}, \texttt{z} (\texttt{double}), \texttt{name} (\texttt{String}).
+    \item Класс «Позиция с меткой времени»: поля \texttt{x}, \texttt{y} (\texttt{double}), \texttt{timestamp} (\texttt{long}).
+    \item Класс «Параметры изображения»: поля \texttt{brightness}, \texttt{contrast}, \texttt{saturation} (\texttt{int}, 0–100).
+    \item Класс «Квадратный трёхчлен»: поля \texttt{a}, \texttt{b}, \texttt{c} (\texttt{double}, $a \neq 0$).
+    \item Класс «GPS-точка»: поля \texttt{lat}, \texttt{lon} (\texttt{double}), \texttt{accuracy} (\texttt{float}, в метрах).
+    \item Класс «Финансовая операция»: поля \texttt{amount} (\texttt{double}), \texttt{currency} (\texttt{String}, например \texttt{"RUB"}), \texttt{date} (\texttt{String} в формате \texttt{"YYYY-MM-DD"}).
+\end{enumerate}
+
 \end{document}
