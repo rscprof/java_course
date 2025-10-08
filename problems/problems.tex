@@ -559,4 +559,62 @@ CD-диски, а также выводить на экран содержимо
     \item Класс «Финансовая операция»: поля \texttt{amount} (\texttt{double}), \texttt{currency} (\texttt{String}, например \texttt{"RUB"}), \texttt{date} (\texttt{String} в формате \texttt{"YYYY-MM-DD"}).
 \end{enumerate}
 
+\section{Семинар 5 (списки, inner, static классы и Iterator)}
+
+Реализуйте список (самостоятельно, без использования библиотеки) согласно
+вашему варианту. В необходимых случаях используйте static и inner-классы. 
+
+\begin{enumerate}
+\item Реализуйте класс \texttt{MyLinkedList}, содержащий внутренний класс \texttt{Node} и вложенный итератор. Метод \texttt{add(int value)} добавляет элемент в конец списка. Метод \texttt{remove(int value)} удаляет первое вхождение значения. Метод \texttt{print()} выводит все элементы. Итератор последовательно возвращает все элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{add(int value)}, добавляющим элемент в начало. Метод \texttt{remove(int index)} удаляет элемент по индексу. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы в порядке хранения.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} вставляет элемент с сохранением неубывающего порядка. Метод \texttt{remove(int value)} удаляет все вхождения значения. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы по порядку.
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{add(int target, int value)}, добавляющим \texttt{value} после первого вхождения \texttt{target} (если \texttt{target} не найден — в конец). Метод \texttt{remove(int value)} удаляет первое вхождение. Метод \texttt{print()} выводит все элементы. Итератор возвращает все элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{add(int index, int value)}, добавляющим элемент по индексу (с проверкой границ). Метод \texttt{remove(int index)} удаляет элемент по индексу. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы в прямом порядке.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeLast()} удаляет последний элемент. Метод \texttt{print()} выводит все элементы. Итератор возвращает все элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет только уникальные значения. Метод \texttt{remove(int value)} удаляет все вхождения. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы без дубликатов (в порядке первого вхождения).
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{addAll(int[] values)}, добавляющим все элементы массива в конец. Метод \texttt{remove(int value)} удаляет все вхождения. Метод \texttt{print(int k)} выводит первые $k$ элементов. Итератор возвращает все элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} вставляет элемент перед первым значением, большим \texttt{value} (иначе — в конец). Метод \texttt{removeAbove(int threshold)} удаляет все элементы > \texttt{threshold}. Метод \texttt{print()} выводит все элементы. Итератор возвращает оставшиеся элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeFirst()} удаляет первый элемент. Метод \texttt{printEven()} выводит только чётные элементы. Итератор возвращает только чётные значения.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в начало. Метод \texttt{removeBelow(int threshold)} удаляет все элементы < \texttt{threshold}. Метод \texttt{printOdd()} выводит только нечётные элементы. Итератор возвращает только нечётные значения.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeZeros()} удаляет все нули. Метод \texttt{printPositive()} выводит только положительные элементы. Итератор возвращает только положительные числа.
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{add(int index, int value)}. Метод \texttt{removeEvenIndices()} удаляет элементы с чётными индексами. Метод \texttt{printOddIndices()} выводит элементы с нечётными индексами. Итератор возвращает элементы с нечётными индексами.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в начало. Метод \texttt{removeDivisibleBy(int n)} удаляет все элементы, делящиеся на $n$. Метод \texttt{print()} выводит оставшиеся элементы. Итератор возвращает элементы, не делящиеся на $n$.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeSmall(int minAbs)} удаляет элементы с $|x| < \texttt{minAbs}$. Метод \texttt{printLarge(int minAbs)} выводит элементы с $|x| \geq \texttt{minAbs}$. Итератор возвращает такие элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList} с ограниченной ёмкостью $N$: \texttt{add(int value)} добавляет в конец, при переполнении удаляется первый элемент. Метод \texttt{remove(int value)} удаляет первое вхождение. Метод \texttt{print()} выводит все элементы. Итератор возвращает все элементы в порядке хранения.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} вставляет с сохранением невозрастающего порядка. Метод \texttt{removeMax()} удаляет первое вхождение максимального элемента. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы по порядку.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeDuplicates()} оставляет только первые вхождения. Метод \texttt{printUnique()} выводит уникальные элементы. Итератор возвращает элементы без повторений.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в начало. Метод \texttt{removeNegative()} удаляет все отрицательные элементы. Метод \texttt{printNonNegative()} выводит оставшиеся. Итератор возвращает только неотрицательные числа.
+
+\item Реализуйте класс \texttt{MyLinkedList} с методом \texttt{addAfterZero(int value)}, добавляющим \texttt{value} после каждого нуля. Метод \texttt{removeZeroPairs()} удаляет все пары (0, x). Метод \texttt{print()} выводит результат. Итератор возвращает элементы, не следующие непосредственно за 0.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeIndexEqualsValue()} удаляет элементы, у которых значение равно их индексу. Метод \texttt{print()} выводит все элементы. Итератор возвращает элементы, у которых значение $\neq$ индекс.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в начало. Метод \texttt{removeAverage()} удаляет все элементы, равные округлённому среднему арифметическому списка. Метод \texttt{print()} выводит все элементы. Итератор возвращает все элементы.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeLocalMinima()} удаляет локальные минимумы (элементы, меньшие обоих соседей). Метод \texttt{print()} выводит оставшиеся элементы. Итератор возвращает все элементы в исходном порядке.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} вставляет с сохранением неубывающего порядка. Метод \texttt{removeRange(int a, int b)} удаляет все элементы в диапазоне $[a, b]$. Метод \texttt{print()} выводит оставшиеся элементы. Итератор возвращает элементы вне диапазона.
+
+\item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeEverySecond()} удаляет каждый второй элемент (индексы 1, 3, 5, …). Метод \texttt{print()} выводит оставшиеся элементы. Итератор возвращает элементы с чётными индексами (0, 2, 4, …).
+\end{enumerate}
+
+
 \end{document}
