@@ -616,5 +616,281 @@ CD-диски, а также выводить на экран содержимо
 \item Реализуйте класс \texttt{MyLinkedList}, в котором \texttt{add(int value)} добавляет в конец. Метод \texttt{removeEverySecond()} удаляет каждый второй элемент (индексы 1, 3, 5, …). Метод \texttt{print()} выводит оставшиеся элементы. Итератор возвращает элементы с чётными индексами (0, 2, 4, …).
 \end{enumerate}
 
+\section{Семинар 6 (sealed class, unit tests)}
+
+Реализуйте решение задачи с возвратом результата в виде Sealed-классов, консольный интерфейс
+для решения задачи и Unit-тесты (согласно всем принципам).
+
+Если в задании какие-то случаи не учтены, дополните.
+
+\begin{enumerate}
+\item[1] \textbf{Анализ линейного уравнения}
+Реализуйте класс \texttt{LinearEquationSolver} с методом
+\texttt{static LinearResult solve(double a, double b)}, решающим уравнение \(ax + b = 0\).
+Возвращаемый sealed-класс \texttt{LinearResult} имеет следующие подклассы:
+\begin{itemize}
+\item \texttt{NoSolution} — без полей; соответствует случаю \(a = 0, b \neq 0\).
+\item \texttt{InfiniteSolutions} — без полей; случай \(a = 0, b = 0\).
+\item \texttt{UniqueSolution} — содержит поле \texttt{double x}; случай \(a \neq 0\), решение \(x = -b/a\).
+\end{itemize}
+
+\item[2] \textbf{Система двух линейных уравнений}
+Класс \texttt{LinearSystemSolver}, метод
+\texttt{static SystemResult solve(double a1, double b1, double c1, double a2, double b2, double c2)} для системы
+\[
+\begin{cases}
+a_1x + b_1y = c_1 \\
+a_2x + b_2y = c_2
+\end{cases}
+\]
+Sealed-класс \texttt{SystemResult}:
+\begin{itemize}
+\item \texttt{NoSolution} — определитель \(\Delta = a_1b_2 - a_2b_1 = 0\), но система несовместна.
+\item \texttt{InfiniteSolutions} — все коэффициенты пропорциональны: \(a_1/a_2 = b_1/b_2 = c_1/c_2\).
+\item \texttt{UniqueSolution} — содержит \texttt{double x, y}; \(\Delta \neq 0\), решение по формулам Крамера.
+\end{itemize}
+
+\item[3] \textbf{Пересечение прямых \(y = k_1x + b_1\) и \(y = k_2x + b_2\)}
+Класс \texttt{LineIntersectionAnalyzer}, метод
+\texttt{static IntersectionResult intersect(double k1, double b1, double k2, double b2)}.
+Sealed-класс \texttt{IntersectionResult}:
+\begin{itemize}
+\item \texttt{ParallelDistinct} — \(k_1 = k_2, b_1 \neq b_2\).
+\item \texttt{Coincident} — \(k_1 = k_2, b_1 = b_2\).
+\item \texttt{IntersectAtPoint} — содержит \texttt{double x, y}; \(k_1 \neq k_2\), точка пересечения.
+\end{itemize}
+
+\item[4] \textbf{Площадь треугольника по трём сторонам}
+Класс \texttt{HeronTriangle}, метод
+\texttt{static AreaResult computeArea(double a, double b, double c)}.
+Sealed-класс \texttt{AreaResult}:
+\begin{itemize}
+\item \texttt{InvalidTriangle} — содержит \texttt{String reason}; стороны \(\leq 0\) или \(a+b \leq c\), \(a+c \leq b\), \(b+c \leq a\).
+\item \texttt{Degenerate} — содержит \texttt{double area = 0.0}; когда \(a + b = c\), \(a + c = b\) или \(b + c = a\).
+\item \texttt{ValidTriangle} — содержит \texttt{double area}; вычисляется по формуле Герона.
+\end{itemize}
+
+\item[5] \textbf{Классификация треугольника}
+Класс \texttt{TriangleClassifier}, метод
+\texttt{static Classification classify(double a, double b, double c)}.
+Sealed-класс \texttt{Classification}:
+\begin{itemize}
+\item \texttt{NotTriangle} — нарушено неравенство треугольника.
+\item \texttt{Equilateral} — содержит \texttt{double side}; \(a = b = c\).
+\item \texttt{IsoscelesRight} — содержит \texttt{double leg, double hypotenuse}; две равные стороны и выполняется \(2\cdot leg^2 = hypotenuse^2\).
+\item \texttt{Isosceles} — содержит \texttt{double equalSide, double base}; две равные стороны, но не прямоугольный.
+\item \texttt{ScaleneRight} — содержит \texttt{double a, double b, double c}; все стороны разные и выполняется теорема Пифагора.
+\item \texttt{ScaleneAcuteOrObtuse} — содержит \texttt{double a, double b, double c}; все стороны разные, и ни один угол не прямой.
+\end{itemize}
+
+\item[6] \textbf{Проверка простоты числа}
+Класс \texttt{PrimeChecker}, метод
+\texttt{static Primality check(int n)}.
+Sealed-класс \texttt{Primality}:
+\begin{itemize}
+\item \texttt{NotNatural} — содержит \texttt{int value}; \(n \leq 1\).
+\item \texttt{Prime} — содержит \texttt{int value}; \(n \geq 2\) и простое.
+\item \texttt{Composite} — содержит \texttt{int value, int smallestDivisor}; \(n \geq 4\) и составное.
+\end{itemize}
+
+\item[7] \textbf{Разложение на простые множители}
+Класс \texttt{PrimeFactorizer}, метод
+\texttt{static Factorization factorize(int n)}.
+Sealed-класс \texttt{Factorization}:
+\begin{itemize}
+\item \texttt{InvalidInput} — содержит \texttt{int n}; \(n < 2\).
+\item \texttt{PrimeNumber} — содержит \texttt{int prime}; \(n\) простое.
+\item \texttt{FactorizationResult} — содержит \texttt{List<Integer> factors}; список простых множителей.
+\end{itemize}
+
+\item[8] \textbf{НОД и НОК двух целых чисел}
+Класс \texttt{GcdLcmCalculator}, метод
+\texttt{static GcdLcmResult compute(long a, long b)}.
+Sealed-класс \texttt{GcdLcmResult}:
+\begin{itemize}
+\item \texttt{BothZero} — без полей; \(a = b = 0\).
+\item \texttt{AtLeastOneZero} — содержит \texttt{long gcd, long lcm}; один ноль, НОД = \(|a + b|\), НОК = 0.
+\item \texttt{BothNonZero} — содержит \texttt{long gcd, long lcm}; НОД и НОК вычисляются для \(|a|, |b|\).
+\end{itemize}
+
+\item[9] \textbf{Уравнение \(\sin x = a\) на отрезке \([0, 2\pi]\)}
+Класс \texttt{SineEquationSolver}, метод
+\texttt{static SineResult solve(double a)}.
+Sealed-класс \texttt{SineResult}:
+\begin{itemize}
+\item \texttt{InvalidA} — содержит \texttt{double a}; \(|a| > 1\).
+\item \texttt{OneSolution} — содержит \texttt{double x}; \(a = 1 \Rightarrow x = \pi/2\), \(a = -1 \Rightarrow x = 3\pi/2\).
+\item \texttt{TwoSolutions} — содержит \texttt{double x1, x2}; \(|a| < 1\), \(x_1 = \arcsin(a)\), \(x_2 = \pi - \arcsin(a)\).
+\end{itemize}
+
+\item[10] \textbf{Расстояние между двумя точками}
+Класс \texttt{PointDistance}, метод
+\texttt{static DistanceResult compute(Point p1, Point p2)}.
+Sealed-класс \texttt{DistanceResult}:
+\begin{itemize}
+\item \texttt{IdenticalPoints} — содержит \texttt{Point p}; \(p_1 = p_2\).
+\item \texttt{PositiveDistance} — содержит \texttt{Point p1, Point p2, double distance}; расстояние > 0.
+\end{itemize}
+
+\item[11] \textbf{Взаимное расположение двух окружностей}
+Класс \texttt{CircleRelationAnalyzer}, метод
+\texttt{static CircleRelation analyze(double x1, double y1, double r1, double x2, double y2, double r2)}.
+Sealed-класс \texttt{CircleRelation}:
+\begin{itemize}
+\item \texttt{InvalidInput} — содержит \texttt{double r1, r2}; \(r_1 \leq 0\) или \(r_2 \leq 0\).
+\item \texttt{Disjoint} — \(d > r_1 + r_2\).
+\item \texttt{TangentExternally} — содержит \texttt{Point touchPoint}; \(d = r_1 + r_2\).
+\item \texttt{TangentInternally} — содержит \texttt{Point touchPoint}; \(d = |r_1 - r_2| > 0\).
+\item \texttt{Intersecting} — содержит \texttt{Point p1, p2}; \(|r_1 - r_2| < d < r_1 + r_2\).
+\item \texttt{OneInsideOther} — \(d < |r_1 - r_2|\).
+\item \texttt{Coincident} — \(d = 0\) и \(r_1 = r_2\).
+\end{itemize}
+
+\item[12] \textbf{Факториал с проверкой переполнения}
+Класс \texttt{SafeFactorial}, метод
+\texttt{static FactorialResult compute(int n)}.
+Sealed-класс \texttt{FactorialResult}:
+\begin{itemize}
+\item \texttt{NegativeInput} — содержит \texttt{int n}; \(n < 0\).
+\item \texttt{Overflow} — содержит \texttt{int n}; \(n \geq 21\).
+\item \texttt{Value} — содержит \texttt{long result}; \(0 \leq n \leq 20\).
+\end{itemize}
+
+\item[13] \textbf{Анализ неравенства \(ax^2 + bx + c > 0\)}
+Класс \texttt{QuadraticInequalityAnalyzer}, метод
+\texttt{static InequalityResult analyze(double a, double b, double c)}.
+Sealed-класс \texttt{InequalityResult}:
+\begin{itemize}
+\item \texttt{NotQuadratic} — содержит \texttt{String message}; \(a = 0\).
+\item \texttt{AlwaysTrue} — \(a > 0\) и \(D < 0\).
+\item \texttt{AlwaysFalse} — \(a < 0\) и \(D < 0\).
+\item \texttt{TrueOutsideInterval} — содержит \texttt{double leftRoot, rightRoot}; \(a > 0, D \geq 0\).
+\item \texttt{TrueInsideInterval} — содержит \texttt{double leftRoot, rightRoot}; \(a < 0, D \geq 0\).
+\end{itemize}
+
+\item[14] \textbf{Положение точки относительно окружности}
+Класс \texttt{PointCirclePosition}, метод
+\texttt{static PositionResult check(double x0, double y0, double r, double x, double y)}.
+Sealed-класс \texttt{PositionResult}:
+\begin{itemize}
+\item \texttt{InvalidCircle} — содержит \texttt{double r}; \(r \leq 0\).
+\item \texttt{Inside} — содержит \texttt{Point p, double distance}; расстояние < r.
+\item \texttt{OnBoundary} — содержит \texttt{Point p}; расстояние = r.
+\item \texttt{Outside} — содержит \texttt{Point p, double distance}; расстояние > r.
+\end{itemize}
+
+\item[15] \textbf{Уравнение \(|x - a| = b\)}
+Класс \texttt{AbsoluteEquation}, метод
+\texttt{static AbsResult solve(double a, double b)}.
+Sealed-класс \texttt{AbsResult}:
+\begin{itemize}
+\item \texttt{InvalidB} — содержит \texttt{double b}; \(b < 0\).
+\item \texttt{OneSolution} — содержит \texttt{double x}; \(b = 0\).
+\item \texttt{TwoSolutions} — содержит \texttt{double x1, x2}; \(b > 0\).
+\end{itemize}
+
+\item[16] \textbf{Уравнение \(|x - a| + |x - b| = c\)}
+Класс \texttt{SumOfAbsEquation}, метод
+\texttt{static SumAbsResult solve(double a, double b, double c)}.
+Sealed-класс \texttt{SumAbsResult}:
+\begin{itemize}
+\item \texttt{InvalidC} — содержит \texttt{double c}; \(c < 0\).
+\item \texttt{NoSolution} — содержит \texttt{double a, b, c}; \(c < |a - b|\).
+\item \texttt{InfiniteSolutions} — содержит \texttt{double left, right}; \(c = |a - b|\).
+\item \texttt{TwoSolutions} — содержит \texttt{double x1, x2}; \(c > |a - b|\), \(x_1 = \frac{a+b-c}{2}\), \(x_2 = \frac{a+b+c}{2}\).
+\end{itemize}
+
+\item[17] \textbf{День недели по дате}
+Класс \texttt{WeekdayFinder}, метод
+\texttt{static WeekdayResult find(int year, int month, int day)}.
+Sealed-класс \texttt{WeekdayResult}:
+\begin{itemize}
+\item \texttt{InvalidDate} — содержит \texttt{int year, month, day}; некорректная дата.
+\item \texttt{Valid} — содержит \texttt{java.time.DayOfWeek weekday}; корректная дата.
+\end{itemize}
+
+\item[18] \textbf{Високосный год}
+Класс \texttt{LeapYearChecker}, метод
+\texttt{static LeapResult check(int year)}.
+Sealed-класс \texttt{LeapResult}:
+\begin{itemize}
+\item \texttt{NonPositiveYear} — содержит \texttt{int year}; \(year \leq 0\).
+\item \texttt{LeapYear} — содержит \texttt{int year}; делится на 4, но не на 100, либо делится на 400.
+\item \texttt{CommonYear} — содержит \texttt{int year}; иначе.
+\end{itemize}
+
+\item[19] \textbf{Сумма арифметической прогрессии}
+Класс \texttt{ArithmeticProgression}, метод
+\texttt{static SumResult sum(int n, double first, double diff)}.
+Sealed-класс \texttt{SumResult}:
+\begin{itemize}
+\item \texttt{NegativeTermCount} — содержит \texttt{int n}; \(n < 0\).
+\item \texttt{ZeroTerms} — \(n = 0\).
+\item \texttt{ValidSum} — содержит \texttt{int n, double sum}; \(n > 0\).
+\end{itemize}
+
+\item[20] \textbf{Проверка возможности построить треугольник}
+Класс \texttt{TriangleFeasibility}, метод
+\texttt{static FeasibilityResult check(double a, double b, double c)}.
+Sealed-класс \texttt{FeasibilityResult}:
+\begin{itemize}
+\item \texttt{NonPositiveLength} — содержит \texttt{double a, b, c}; стороны \(\leq 0\).
+\item \texttt{CannotFormTriangle} — содержит \texttt{double a, b, c}; нарушено неравенство треугольника.
+\item \texttt{CanFormTriangle} — содержит \texttt{double a, b, c}; \(a+b>c\), \(a+c>b\), \(b+c>a\).
+\end{itemize}
+
+\item[21] \textbf{Цилиндр: объём и площадь поверхности}
+Класс \texttt{CylinderCalculator}, метод
+\texttt{static CylinderResult compute(double r, double h)}.
+Sealed-класс \texttt{CylinderResult}:
+\begin{itemize}
+\item \texttt{InvalidInput} — содержит \texttt{double r, h}; \(r \leq 0\) или \(h \leq 0\).
+\item \texttt{Metrics} — содержит \texttt{double volume, surfaceArea}; \(V = \pi r^2 h\), \(S = 2\pi r(r + h)\).
+\end{itemize}
+
+\item[22] \textbf{Пересечение двух отрезков}
+Класс \texttt{SegmentIntersection}, метод
+\texttt{static IntersectionResult intersect(Point a1, Point a2, Point b1, Point b2)}.
+Sealed-класс \texttt{IntersectionResult}:
+\begin{itemize}
+\item \texttt{NoIntersection} — отрезки не пересекаются.
+\item \texttt{PointIntersection} — содержит \texttt{Point p}; пересечение в одной точке.
+\item \texttt{Overlap} — содержит \texttt{Point start, Point end}; общий отрезок.
+\end{itemize}
+
+\item[23] \textbf{Параллелограмм по четырём точкам}
+Класс \texttt{ParallelogramChecker}, метод
+\texttt{static ParallelogramResult check(Point p1, Point p2, Point p3, Point p4)}.
+Sealed-класс \texttt{ParallelogramResult}:
+\begin{itemize}
+\item \texttt{Degenerate} — содержит \texttt{Point[] points}; точки вырождены.
+\item \texttt{NotParallelogram} — содержит \texttt{Point[] points}; не параллелограмм.
+\item \texttt{IsParallelogram} — содержит \texttt{Point[] points}; параллелограмм.
+\end{itemize}
+
+\item[24] \textbf{Показательное уравнение \(a^x = b\)}
+Класс \texttt{ExponentialEquation}, метод
+\texttt{static ExpResult solve(double a, double b)}.
+Sealed-класс \texttt{ExpResult}:
+\begin{itemize}
+\item \texttt{InvalidBase} — содержит \texttt{double a}; \(a \leq 0\).
+\item \texttt{NoSolution} — содержит \texttt{double a, double b}; \(a = 1, b \neq 1\).
+\item \texttt{InvalidArgument} — содержит \texttt{double b}; \(a > 0, a \neq 1, b \leq 0\).
+\item \texttt{InfiniteSolutions} — содержит \texttt{double a, double b}; \(a = 1, b = 1\).
+\item \texttt{UniqueSolution} — содержит \texttt{double x}; \(a > 0, a \neq 1, b > 0\).
+\end{itemize}
+
+\item[25] \textbf{Анализатор сетевых адресов}
+Класс \texttt{NetworkAnalyzer}, метод
+\texttt{static AnalysisResult analyze(String address)}.
+Sealed-класс \texttt{AnalysisResult}:
+\begin{itemize}
+\item \texttt{ValidIPv4} — содержит массив 4 байтов
+\item \texttt{ValidIPv6} — содержит массив 6 байтов
+\item \texttt{InvalidAddress} — содержит \texttt{String error}
+\item \texttt{ReservedAddress} — содержит \texttt{String type} (например, "private", "loopback")
+\end{itemize}
+\end{enumerate}
+
 
 \end{document}
