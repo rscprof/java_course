@@ -1,0 +1,234 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{longtable}
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+\setmainlanguage{russian}
+
+\geometry{margin=2cm}
+
+\lstset{
+  language=Java,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single
+}
+
+\title{Конспект первой пары по JavaFX: Базовые основы FXML и простое приложение}
+\author{Подсказка лектору}
+\date{Октябрь 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Общие принципы урока}
+
+\textbf{Цель:} Ввести в основы JavaFX через FXML: настроить проект в IntelliJ IDEA, создать простое FXML-приложение (калькулятор суммы двух чисел), изучить базовые контролы и layouts. Фокус на практике: 30--40\% теории, 60--70\% демо в Scene Builder + IntelliJ.
+
+\textbf{Аудитория:} Новички в JavaFX (знают базовый Java).
+
+\textbf{Формат:} Теория кратко, демонстрации в IntelliJ + Scene Builder. Каждый шаг -- показ на экране с комментариями в FXML и пояснениями. Использовать комментарии XML для ключевых понятий.
+
+\textbf{Материалы:} Готовый шаблон проекта на Gradle (GitHub/zip), код с встроенными комментариями.
+
+\textbf{Распределение времени:} 80 мин.
+
+\section{1. Введение и настройка проекта (0--10 мин)}
+
+\textbf{0--2 мин: Введение.}\\
+FXML -- декларативный XML для UI (как HTML). Позволяет создавать GUI на Java. К концу пары студенты создают FXML-приложение для суммирования чисел. Вербально объяснить и нарисовать диаграмму: Stage $\to$ Scene $\to$ Nodes.
+
+\textbf{2--8 мин: Настройка в IntelliJ.}\\
+\begin{enumerate}
+    \item File $\to$ New $\to$ Project $\to$ Import (открыть готовый Gradle-проект).
+    \item В \texttt{build.gradle} уже добавлена зависимость:
+\begin{lstlisting}
+dependencies {
+    implementation 'org.openjfx:javafx-controls:21'
+}
+\end{lstlisting}
+    \item Скачать Scene Builder и интегрировать: Right-click на FXML $\to$ Open in Scene Builder.
+\end{enumerate}
+
+Демо: создать \texttt{sample.fxml} и main.  
+
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="10" alignment="CENTER">
+   <Label text="Hello, FXML!" />
+</VBox>
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java]
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+public class MainApp extends Application {
+    @Override
+    public void start(Stage stage) throws Exception {
+        Parent root = FXMLLoader.load(getClass().getResource("/sample.fxml"));
+        Scene scene = new Scene(root, 300, 200);
+        stage.setScene(scene);
+        stage.setTitle("Hello FXML");
+        stage.show();
+    }
+}
+\end{lstlisting}
+
+\section{2. База JavaFX: Stage, Scene, граф и FXML (10--30 мин)}
+
+\textbf{10--15 мин: Stage $\to$ Scene $\to$ граф.}\\
+JavaFX строится как дерево: Stage содержит Scene, Scene -- root-узел (layout или control). Node -- элемент UI (текст, кнопка), родитель управляет положением и размером детей.
+
+\textbf{15--25 мин: FXML.}\\
+FXML -- декларативный XML для UI. Используется в Scene Builder. Плюсы: разделение UI/логики, легкое редактирование. Элементы: \texttt{<?import?>}, \texttt{xmlns}, \texttt{fx:controller}.
+
+\section{3. Основные Layouts в FXML (30--50 мин)}
+
+\textbf{30--40 мин: HBox и VBox.}\\
+Контейнеры для размещения контролов:
+
+\begin{itemize}
+    \item \texttt{alignment="BOTTOM\_LEFT"} -- выравнивание содержимого (Pos: TOP\_LEFT, CENTER и др.)
+    \item \texttt{HBox.hgrow="ALWAYS"} -- растяжка по ширине
+    \item \texttt{VBox.vgrow="ALWAYS"} -- растяжка по высоте
+    \item \texttt{spacing="10"} -- расстояние между детьми
+    \item \texttt{padding="10"} -- внутренние отступы
+    \item \texttt{VBox.margin="10"} / \texttt{HBox.margin="10"} -- внешние отступы для детей
+\end{itemize}
+
+Пример: 
+\texttt{<VBox spacing="10" alignment="CENTER" padding="10"><Label text="Пример"/></VBox>}  
+
+\textbf{Константы Pos для alignment:}
+
+\begin{longtable}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Константа} & \textbf{Описание} \\
+\hline
+BASELINE\_CENTER & Позиционирование по базовой линии вертикально и по центру горизонтально. \\
+BASELINE\_LEFT & По базовой линии вертикально и слева горизонтально. \\
+BASELINE\_RIGHT & По базовой линии вертикально и справа горизонтально. \\
+BOTTOM\_CENTER & Снизу вертикально и по центру горизонтально. \\
+BOTTOM\_LEFT & Снизу вертикально и слева горизонтально. \\
+BOTTOM\_RIGHT & Снизу вертикально и справа горизонтально. \\
+CENTER & По центру вертикально и горизонтально. \\
+CENTER\_LEFT & По центру вертикально и слева горизонтально. \\
+CENTER\_RIGHT & По центру вертикально и справа горизонтально. \\
+TOP\_CENTER & Сверху вертикально и по центру горизонтально. \\
+TOP\_LEFT & Сверху вертикально и слева горизонтально. \\
+TOP\_RIGHT & Сверху вертикально и справа горизонтально. \\
+\hline
+\end{longtable}
+
+\textbf{40--50 мин: Pane, GridPane и AnchorPane.}\\
+\begin{itemize}
+    \item Pane -- базовый, ручное расположение (layoutX/Y)
+    \item GridPane -- таблицы (rowIndex, columnIndex, hgap, vgap, padding)
+    \item AnchorPane -- якоря к краям (topAnchor, leftAnchor)
+\end{itemize}
+
+Примеры в FXML показаны выше.
+
+\section{4. Базовые Controls в FXML (50--60 мин)}
+
+\textbf{50--55 мин: Label, Button, TextField.}\\
+\begin{itemize}
+    \item Label: \texttt{<Label fx:id="myLabel" text="Пример" font="Arial 14"/>}
+    \item Button: \texttt{<Button fx:id="myButton" text="Клик" onAction="\#handleClick"/>}
+    \item TextField: \texttt{<TextField fx:id="myField" promptText="Ввод" prefWidth="100"/>}
+\end{itemize}
+
+\textbf{55--60 мин: CheckBox, RadioButton, Tooltip.}\\
+\begin{itemize}
+    \item CheckBox: \texttt{<CheckBox fx:id="myCheck" text="Согласен"/>}
+    \item RadioButton с ToggleGroup:
+\begin{lstlisting}[language=Java]
+<HBox xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <fx:define>
+            <ToggleGroup fx:id="group"/>
+        </fx:define>
+        <RadioButton text="Да" toggleGroup="$group"/>
+        <RadioButton text="Нет" toggleGroup="$group"/>
+    </children>
+</HBox>
+\end{lstlisting}
+    \item Tooltip: использовать \texttt{Tooltip.install(myButton, new Tooltip("Текст"));}
+\end{itemize}
+
+\section{5. Events и создание приложения в FXML (60--80 мин)}
+
+\textbf{60--65 мин: Events.}\\
+Для Button: \texttt{onAction="\#handleSum"} -- ссылка на метод в контроллере.
+
+\textbf{65--80 мин: Полное демо-приложение.}\\
+FXML (\texttt{sample.fxml}):
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.SumController" spacing="10" alignment="CENTER">
+   <Label text="Калькулятор суммы"/>
+   <HBox spacing="5">
+      <TextField fx:id="num1" promptText="Первое число" prefWidth="100"/>
+      <Label text="+"/>
+      <TextField fx:id="num2" promptText="Второе число" prefWidth="100"/>
+   </HBox>
+   <Button fx:id="sumButton" text="Сумма" onAction="#handleSum"/>
+   <Label fx:id="resultLabel" text="Результат: 0"/>
+</VBox>
+\end{lstlisting}
+
+Контроллер (\texttt{SumController.java}):
+\begin{lstlisting}[language=Java]
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+
+public class SumController {
+    @FXML private TextField num1;
+    @FXML private TextField num2;
+    @FXML private Label resultLabel;
+
+    @FXML
+    private void handleSum(ActionEvent event) {
+        try {
+            double a = Double.parseDouble(num1.getText());
+            double b = Double.parseDouble(num2.getText());
+            resultLabel.setText("Результат: " + (a + b));
+        } catch (NumberFormatException e) {
+            resultLabel.setText("Ошибка: введите числа!");
+        }
+    }
+}
+\end{lstlisting}
+
+Main -- как выше. Запуск: ввод 5 + 3 $\to$ ``Результат: 8.0''.
+
+\end{document}

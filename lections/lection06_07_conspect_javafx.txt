@@ -1,0 +1,59 @@
+пример
+FXML vs создание кодом
+stage->scene->граф
+event
+Layouts
+- HBOX и VBOX
+-- setAlignment (BOTTOM_LEFT, BOTTOM_RIGHT, )
+-- hgrow
+-- vgrow
+-- margins
+- Pane
+- GridPane
+- AnchorPane
+- TilePane
+- TitledPane
+- Group
+- FlowPane
+- MenuBar
+- ContextMenu
+- WebView
+- PieChart
+- TreeView
+- Canvas
+Controls:
+- Text
+-- install font
+- HyperLink
+- Label
+- Button
+- MenuButton
+- SplitMenuButton
+- ToggleButton
+- RadioButton
+- CheckBox
+- ChoiceBox
+- DatePicker
+- ColorPicker
+- TextField
+- PasswordField
+- Slider
+- TextArea
+- ToolBar
+- Tooltip
+- ProgressBar
+- FileChooser
+- DirectoryChooser
+- Accordion
+------------------------
+property of JavaFX
+--------------------------
+ChoiceBox
+ComboBox
+ListView
+TableView
+ImageView
+LineChart
+Pagination
+---------------------------
+MVVM
