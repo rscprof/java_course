@@ -1,0 +1,280 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\setlist{noitemsep,topsep=2pt}
+
+\title{Конспект по мультипоточному программированию в Java}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Первая лекция: база}
+
+Определения процесс, поток, создание потока (по классике), проблемы многопоточного 
+программирования (взаимная блокировка и гонка с обсуждением), 
+синхронизация (synchronized методы).
+
+\section{Вторая лекция: практика и дополнения}
+
+\subsection{Понятие и синтаксис лямбда-функций}
+
+Лямбда-выражения в Java — это сокращённый синтаксис для реализации функциональных интерфейсов (интерфейсов с одним абстрактным методом). Они появились в Java 8.
+Синтаксис: (параметры) -> тело.
+Пример: \texttt{Runnable r = () -> System.out.println("Привет из лямбды");}
+Если параметров нет — скобки пустые; если один параметр — скобки можно опустить; если несколько — обязательно в скобках.
+Тело может быть блоком: \texttt{(x, y) -> \{ return x + y; \}}
+Важно: лямбда захватывает только effectively final переменные (те, что не меняются после инициализации).
+
+\subsubsection{Аннотация @FunctionalInterface и стандартные функциональные интерфейсы}
+
+Функциональные интерфейсы рекомендуется помечать аннотацией \texttt{@FunctionalInterface}, чтобы гарантировать наличие ровно одного абстрактного метода.
+
+Пример:
+\begin{verbatim}
+@FunctionalInterface
+interface MyAction {
+    void execute();
+}
+\end{verbatim}
+
+Java предоставляет встроенные функциональные интерфейсы (\texttt{java.util.function}):
+
+\begin{itemize}
+\item \texttt{Supplier<T>} — возвращает значение без аргументов: \texttt{() -> 42}
+\item \texttt{Consumer<T>} — принимает аргумент, ничего не возвращает: \texttt{x -> System.out.println(x)}
+\item \texttt{Function<T,R>} — принимает T, возвращает R: \texttt{x -> x.length()}
+\item \texttt{Predicate<T>} — возвращает boolean: \texttt{x -> x > 0}
+\end{itemize}
+
+\subsection{Runnable}
+
+\texttt{Runnable} — стандартный интерфейс для задач без возвращаемого значения:
+\texttt{public interface Runnable \{ void run(); \}}
+Используется повсеместно для передачи кода в потоки или исполнители.
+Пример:
+\begin{verbatim}
+Runnable task = new Runnable() {
+    public void run() {
+        System.out.println("Работаю!");
+    }
+};
+\end{verbatim}
+Или короче через лямбду:
+\begin{verbatim}
+Runnable task = () -> System.out.println("Работаю!");
+\end{verbatim}
+
+\subsection{Создание потоков на базе Runnable}
+
+Чтобы запустить задачу в отдельном потоке, оборачиваем \texttt{Runnable} в \texttt{Thread}:
+\begin{verbatim}
+Thread t = new Thread(runnable);
+t.start(); // запускает новый поток
+\end{verbatim}
+Пример:
+\begin{verbatim}
+Thread worker = new Thread(() -> {
+    for (int i = 0; i < 3; i++) {
+        System.out.println("Поток: " + i);
+    }
+});
+worker.start();
+\end{verbatim}
+
+Важно: вызов \texttt{run()} напрямую НЕ создаёт поток — это обычная синхронная функция.
+
+\subsection{Атомарные переменные}
+
+Атомарные классы (из \texttt{java.util.concurrent.atomic}) позволяют выполнять потокобезопасные операции без \texttt{synchronized}.
+Примеры:
+\begin{verbatim}
+AtomicInteger counter = new AtomicInteger(0);
+counter.incrementAndGet(); // атомарно увеличивает на 1
+counter.addAndGet(5);      // атомарно прибавляет 5
+counter.get();              // получает текущее значение
+\end{verbatim}
+Эти операции используют CAS (compare-and-swap) на уровне процессора и не блокируют другие потоки.
+
+\subsubsection{LongAdder и LongAccumulator}
+
+При очень высокой нагрузке \texttt{AtomicLong} может быть менее эффективен, поэтому используют:
+
+\begin{itemize}
+\item \texttt{LongAdder} — быстрее при частых инкрементах:
+\end{itemize}
+
+\begin{verbatim}
+LongAdder adder = new LongAdder();
+adder.increment();
+System.out.println(adder.sum());
+\end{verbatim}
+
+\begin{itemize}
+\item \texttt{LongAccumulator} — позволяет задавать операцию, например максимум:
+\end{itemize}
+
+\begin{verbatim}
+LongAccumulator max = new LongAccumulator(Long::max, Long.MIN_VALUE);
+max.accumulate(10);
+max.accumulate(50);
+System.out.println(max.get()); // 50
+\end{verbatim}
+
+\subsection{Специальные реализации коллекций}
+
+Обычные коллекции (\texttt{ArrayList}, \texttt{HashMap}) не потокобезопасны. Вместо них — специальные реализации:
+\begin{itemize}
+\item \texttt{ConcurrentHashMap}: \texttt{Map<String, Integer> map = new ConcurrentHashMap<>();}
+\item \texttt{CopyOnWriteArrayList}: \texttt{List<String> list = new CopyOnWriteArrayList<>();}
+\item Обёртка: \texttt{List<String> syncList = Collections.synchronizedList(new ArrayList<>());}
+\end{itemize}
+
+Пример использования:
+\begin{verbatim}
+ConcurrentHashMap<String, Integer> stats = new ConcurrentHashMap<>();
+stats.compute("requests", (k, v) -> v == null ? 1 : v + 1); // потокобезопасно
+\end{verbatim}
+
+\paragraph{Особенности CopyOnWriteArrayList:}
+Эффективен при редком добавлении и частом чтении, так как при изменении создаётся новая копия массива. Плохо подходит для частых модификаций.
+
+\subsection{Диспетчеры потоков}
+
+\texttt{ExecutorService} — это пул потоков, управляющий выполнением задач. Создаётся через фабрику \texttt{Executors}.
+Основные типы:
+\begin{itemize}
+\item \texttt{newFixedThreadPool(n)} — фиксированный пул из \texttt{n} потоков.
+\item \texttt{newSingleThreadExecutor()} — один поток, задачи в очереди.
+\item \texttt{newCachedThreadPool()} — динамический пул, создаёт потоки по мере необходимости.
+\item \texttt{newScheduledThreadPool(n)} — пул с поддержкой отложенного и периодического выполнения.
+\item \texttt{newSingleThreadScheduledExecutor()} — однопоточный планировщик.
+\end{itemize}
+
+Примеры:
+\begin{verbatim}
+Executors.newFixedThreadPool(4);
+Executors.newSingleThreadExecutor();
+Executors.newCachedThreadPool();
+ScheduledExecutorService s = Executors.newScheduledThreadPool(2);
+Executors.newSingleThreadScheduledExecutor();
+
+ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
+// Однократное выполнение через 1 секунду
+scheduler.schedule(() -> System.out.println("Выполнено через 1 сек"), 1, TimeUnit.SECONDS);
+
+// Периодическое выполнение каждые 2 секунды (с задержкой 0)
+scheduler.scheduleAtFixedRate(() -> System.out.println("Повтор каждые 2 сек"), 0, 2, TimeUnit.SECONDS);
+
+// Завершение через 10 секунд (для примера)
+scheduler.schedule(() -> scheduler.shutdown(), 10, TimeUnit.SECONDS);
+
+\end{verbatim}
+
+Важно: всегда вызывать \texttt{shutdown()} после завершения работы, иначе JVM не завершится.
+
+\subsection{Future и получение результата задачи}
+
+Когда задача должна вернуть результат, вместо \texttt{Runnable} используется интерфейс \texttt{Callable<T>}, у которого метод \texttt{T call()} может возвращать значение и выбрасывать проверяемые исключения.
+Метод \texttt{submit(Callable)} возвращает объект \texttt{Future<T>}, через который можно получить результат (блокируя поток) или проверить статус.
+
+Пример:
+\begin{verbatim}
+ExecutorService exec = Executors.newFixedThreadPool(2);
+Callable<Integer> task = () -> { Thread.sleep(1000); return 42; };
+Future<Integer> future = exec.submit(task);
+try {
+    Integer result = future.get(); // блокируется до завершения
+} catch (InterruptedException | ExecutionException e) {
+    e.printStackTrace();
+}
+exec.shutdown();
+\end{verbatim}
+
+Дополнительно:
+\begin{itemize}
+\item \texttt{future.isDone()} — проверяет, завершена ли задача.
+\item \texttt{future.cancel(true)} — пытается отменить выполнение.
+\item \texttt{get(timeout, unit)} — версия с таймаутом, чтобы избежать бесконечного ожидания.
+\end{itemize}
+
+\subsubsection{CompletableFuture: современное расширение Future}
+
+Позволяет строить цепочки задач и асинхронно обрабатывать результаты:
+\begin{verbatim}
+CompletableFuture.supplyAsync(() -> 21)
+    .thenApply(x -> x * 2)
+    .thenAccept(System.out::println);
+
+
+ExecutorService pool = Executors.newFixedThreadPool(4);
+CompletableFuture.supplyAsync(() -> 21, pool);
+
+int result = future.join();
+System.out.println(result); // 52
+
+
+\end{verbatim}
+
+supplyAsync() без Executor использует ForkJoinPool.commonPool() (обычно параллельный пул потоков JVM).
+
+
+\subsection{Виртуальные потоки и структурированная конкуррентность (Java 19+)}
+
+Виртуальные потоки (\texttt{Thread.ofVirtual()}) позволяют запускать тысячи лёгких потоков:
+
+\begin{verbatim}
+Thread t = Thread.ofVirtual().start(() -> System.out.println("Лёгкий поток"));
+t.join();
+
+
+ExecutorService virtualPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
+
+virtualPool.submit(() -> System.out.println("Виртуальный поток работает"));
+virtualPool.submit(() -> {
+    try { Thread.sleep(500); } catch (InterruptedException e) {}
+    System.out.println("Вторая задача");
+});
+
+virtualPool.shutdown();
+virtualPool.awaitTermination(1, TimeUnit.SECONDS);
+
+CompletableFuture.runAsync(() -> System.out.println("Виртуальный поток для CF"),
+                           Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory()));
+
+
+ExecutorService carrierPool = Executors.newFixedThreadPool(5);
+ExecutorService virtualPool = Executors.newThreadPerTaskExecutor(
+    Thread.ofVirtual().factory().withExecutor(carrierPool)
+);
+
+\end{verbatim}
+
+С Java 21 в режиме превью появилась структурированная конкуррентность (\texttt{StructuredTaskScope}) — удобная альтернатива ручному управлению пулами потоков.
+
+\subsection{Пример}
+
+Комплексный пример: подсчёт суммы с использованием пула потоков и атомарной переменной.
+
+\begin{verbatim}
+AtomicLong total = new AtomicLong(0);
+ExecutorService pool = Executors.newFixedThreadPool(3);
+int[] data = {10, 20, 30, 40};
+
+for (int x : data) {
+    pool.submit(() -> total.addAndGet(x));
+}
+
+pool.shutdown();
+pool.awaitTermination(5, TimeUnit.SECONDS);
+System.out.println("Итог: " + total.get());
+\end{verbatim}
+
+Обратите внимание: этот код корректен, но неэффективен при большом числе элементов (лучше группировать задачи). Также напомните, что \texttt{x} — effectively final, поэтому захват в лямбду корректен.
+
+\end{document}
