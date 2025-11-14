@@ -1,16 +1,16 @@
-пример
-FXML vs создание кодом
-stage->scene->граф
-event
-Layouts
-- HBOX и VBOX
--- setAlignment (BOTTOM_LEFT, BOTTOM_RIGHT, )
--- hgrow
--- vgrow
--- margins
-- Pane
-- GridPane
-- AnchorPane
+пример (+)
+FXML vs создание кодом (+)
+stage->scene->граф (+)
+event (+)
+Layouts (+)
+- HBOX и VBOX (+)
+-- setAlignment (BOTTOM_LEFT, BOTTOM_RIGHT, )  (+)
+-- hgrow  (+)
+-- vgrow  (+)
+-- margins  (+)
+- Pane  (+)
+- GridPane  (+)
+- AnchorPane  (+)
 - TilePane
 - TitledPane
 - Group
@@ -20,22 +20,22 @@ Layouts
 - WebView
 - PieChart
 - TreeView
-- Canvas
+- Canvas  (+)
 Controls:
-- Text
+- Text  
 -- install font
 - HyperLink
-- Label
-- Button
+- Label  (+)
+- Button  (+)
 - MenuButton
 - SplitMenuButton
 - ToggleButton
-- RadioButton
-- CheckBox
+- RadioButton  (+)
+- CheckBox  (+)
 - ChoiceBox
-- DatePicker
-- ColorPicker
-- TextField
+- DatePicker  (+)
+- ColorPicker  (+)
+- TextField  (+)
 - PasswordField
 - Slider
 - TextArea

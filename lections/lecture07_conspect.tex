@@ -1,0 +1,310 @@
+\documentclass[12pt,a4paper]{article}
+
+% Пакеты
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{longtable}
+
+% Шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Поддержка кириллицы в polyglossia
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+% Основной язык
+\setmainlanguage{russian}
+
+% Поля страницы
+\geometry{margin=2cm}
+
+% Настройки для listings (Java)
+\lstset{
+  language=Java,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single
+}
+
+% Заголовок документа
+\title{Конспект второй пары по JavaFX: Продвинутые контролы, динамическое создание UI и работа с файлами}
+\author{Подсказка лектору}
+\date{Ноябрь 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Общие принципы урока}
+\textbf{Цель:} Продолжить изучение JavaFX: динамическое создание UI в коде (без FXML), дополнительные контролы (Spinner, TextArea, Canvas, TabPane, DatePicker, ColorPicker, ComboBox), обработка событий, стилизация, диалоги файлов (FileChooser), многопоточность (Platform.runLater) и базовая работа с файлами. Фокус на практике: 30--40\% теории, 60--70\% демо в IntelliJ.
+
+\textbf{Аудитория:} Студенты, знакомые с базовым JavaFX и FXML.
+
+\textbf{Формат:} Краткая теория, демонстрации в IntelliJ. Каждый шаг — показ на экране с комментариями в коде. Использовать встроенные комментарии для ключевых понятий.
+
+\textbf{Распределение времени:} 80 мин.
+
+\section{Динамическое создание UI в коде (0--15 мин)}
+\textbf{0--5 мин: Введение в динамическое создание.} \\
+JavaFX позволяет создавать UI программно, без FXML. Это полезно для динамических элементов (например, генерируемых на основе данных). Сравнить с FXML: код более гибкий, но менее визуальный.
+
+\textbf{5--15 мин: Примеры создания и стилизации.} \\
+Демо: создать \texttt{Label} динамически и добавить обработчик события.
+\begin{lstlisting}
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.geometry.Insets;
+
+// В методе start или контроллере
+Label result = new Label("Результат");
+result.setOnMouseClicked(event -> {
+    System.out.println("Клик по лейблу!");
+});
+result.setStyle("-fx-background-color: aqua;");
+
+// Альтернатива стиля через Background
+result.setBackground(new Background(
+    new BackgroundFill(
+        new Color(0.9, 0.9, 0.9, 1),
+        CornerRadii.EMPTY,
+        Insets.EMPTY
+    )
+));
+\end{lstlisting}
+Добавить в layout, например, \texttt{VBox}.
+
+\section{Дополнительные контролы: Spinner, TextArea, Canvas (15--35 мин)}
+\textbf{15--20 мин: Spinner и TextArea.} \\
+\texttt{Spinner} — для ввода чисел с кнопками увеличения/уменьшения. \texttt{TextArea} — многострочный текст.
+\begin{lstlisting}
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextArea;
+
+// Spinner для целых чисел от 0 до 100
+Spinner<Integer> spinner = new Spinner<>(0, 100, 50);
+spinner.setOnAction(event -> {
+    System.out.println("Значение: " + spinner.getValue());
+});
+
+// TextArea
+TextArea textArea = new TextArea("Введите текст...");
+textArea.setPrefRowCount(5);
+textArea.setWrapText(true);
+\end{lstlisting}
+
+\textbf{20--35 мин: Canvas и GraphicsContext.} \\
+\texttt{Canvas} — для рисования графики. \texttt{GraphicsContext} — контекст для операций.
+\begin{lstlisting}
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+
+// Создаем Canvas
+Canvas canvas = new Canvas(200, 200);
+GraphicsContext gc = canvas.getGraphicsContext2D();
+gc.setFill(Color.BLACK);
+gc.setStroke(Color.BLACK);
+gc.strokeLine(20, 20, 40, 40);
+gc.fillOval(0, 0, 20, 20);
+
+// Дополнительный пример: линия и круг
+gc.strokeLine(10, 10, 100, 100);
+gc.fillOval(50, 50, 30, 30);
+\end{lstlisting}
+Демо: добавить в \texttt{Scene} и показать рисование.
+
+\section{Продвинутые layouts и контролы: TabPane, DatePicker, ColorPicker, ComboBox (35--55 мин)}
+\textbf{35--45 мин: TabPane.} \\
+\texttt{TabPane} — для вкладок. Каждая \texttt{Tab} содержит контент.
+\begin{lstlisting}
+import javafx.scene.control.TabPane;
+import javafx.scene.control.Tab;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.GridPane;
+import javafx.scene.control.Label;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+
+// Создаем TabPane
+TabPane tabPane = new TabPane();
+
+// Первая вкладка
+Tab tab1 = new Tab("Основная");
+tab1.setClosable(false);
+VBox tab1Content = new VBox(10);
+tab1Content.getChildren().addAll(
+    new Label("Это основная вкладка"),
+    new Button("Кнопка 1"),
+    new TextField("Текстовое поле")
+);
+tab1.setContent(tab1Content);
+
+// Вторая вкладка
+Tab tab2 = new Tab("Настройки");
+tab2.setClosable(false);
+GridPane tab2Content = new GridPane();
+tab2Content.setVgap(10);
+tab2Content.setHgap(10);
+tab2Content.add(new Label("Настройка 1:"), 0, 0);
+tab2Content.add(new TextField("Значение"), 1, 0);
+tab2Content.add(new Label("Настройка 2:"), 0, 1);
+tab2Content.add(new ComboBox<String>(), 1, 1);
+tab2.setContent(tab2Content);
+
+// Третья вкладка с таблицей
+Tab tab3 = new Tab("Данные");
+TableView<String> tableView = new TableView<>();
+TableColumn<String, String> column = new TableColumn<>("Данные");
+tableView.getColumns().add(column);
+tab3.setContent(tableView);
+
+// Добавляем вкладки
+tabPane.getTabs().addAll(tab1, tab2, tab3);
+\end{lstlisting}
+
+\textbf{45--50 мин: DatePicker и ColorPicker.} \\
+\texttt{DatePicker} — выбор даты. \texttt{ColorPicker} — выбор цвета.
+
+FXML-пример для DatePicker и ColorPicker:
+\begin{lstlisting}[language=XML]
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.ColorPicker?>
+
+<DatePicker fx:id="datePicker" onAction="#onDateChanged"/>
+<ColorPicker fx:id="colorPicker" value="#FF0000" onAction="#onColorChanged"/>
+
+<DatePicker GridPane.rowIndex="5" GridPane.columnIndex="0">
+    <value>
+        <LocalDate fx:factory="now"/>
+    </value>
+</DatePicker>
+\end{lstlisting}
+
+В коде (для задания начального значения в контроллере, реализующем \texttt{Initializable}):
+\begin{lstlisting}
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.ColorPicker;
+
+// DatePicker
+DatePicker datePicker = new DatePicker();
+datePicker.setOnAction(event -> {
+    System.out.println("Выбрана дата: " + datePicker.getValue());
+});
+
+// ColorPicker
+ColorPicker colorPicker = new ColorPicker(Color.RED);
+colorPicker.setOnAction(event -> {
+    System.out.println("Выбран цвет: " + colorPicker.getValue());
+});
+\end{lstlisting}
+
+\textbf{50--55 мин: ComboBox.} \\
+\texttt{ComboBox} — выпадающий список.
+
+FXML-пример:
+\begin{lstlisting}[language=XML]
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.collections.FXCollections?>
+
+<ComboBox fx:id="comboBox" promptText="Выберите..." onAction="#onComboBoxChanged">
+    <items>
+        <FXCollections fx:factory="observableArrayList">
+            <String fx:value="Вариант 1"/>
+            <String fx:value="Вариант 2"/>
+            <String fx:value="Вариант 3"/>
+        </FXCollections>
+    </items>
+</ComboBox>
+\end{lstlisting}
+
+В коде:
+\begin{lstlisting}
+import javafx.scene.control.ComboBox;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+// Создаем ComboBox
+ComboBox<String> comboBox = new ComboBox<>();
+comboBox.setPromptText("Выберите...");
+ObservableList<String> options = FXCollections.observableArrayList(
+    "Вариант 1", "Вариант 2", "Вариант 3"
+);
+comboBox.setItems(options);
+comboBox.setOnAction(event -> {
+    System.out.println("Выбрано: " + comboBox.getValue());
+});
+\end{lstlisting}
+
+\section{Диалоги и работа с файлами (55--70 мин)}
+\textbf{55--65 мин: FileChooser.} \\
+\texttt{FileChooser} — диалог выбора файла.
+\begin{lstlisting}
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
+import java.io.File;
+
+// В методе, например, в обработчике кнопки
+FileChooser fileChooser = new FileChooser();
+fileChooser.getExtensionFilters().add(
+    new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif")
+);
+File selectedFile = fileChooser.showOpenDialog(number1.getScene().getWindow()); // number1 — любой Node в сцене
+if (selectedFile != null && selectedFile.isFile()) {
+    String path = selectedFile.getPath();
+    System.out.println("Выбран файл: " + path);
+}
+\end{lstlisting}
+Демо: открыть файл и вывести путь.
+
+\textbf{65--70 мин: Чтение файлов с BufferedReader.} \\
+Использовать \texttt{java.nio} для чтения.
+\begin{lstlisting}
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+// Пример чтения файла
+try (BufferedReader reader = Files.newBufferedReader(Path.of("file.txt"))) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+        System.out.println(line);
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+}
+\end{lstlisting}
+
+\section{Многопоточность в JavaFX (70--80 мин)}
+\textbf{70--80 мин: Platform.runLater.} \\
+JavaFX UI обновляется только в главном потоке. Для других потоков использовать \texttt{Platform.runLater}.
+\begin{lstlisting}
+import javafx.application.Platform;
+
+// В дополнительном потоке
+Platform.runLater(() -> {
+    // Обновление UI, например:
+    resultLabel.setText("Обновлено из другого потока");
+});
+\end{lstlisting}
+Демо: симулировать фоновую задачу (\texttt{Thread}) и обновить UI.
+
+\end{document}

@@ -1,0 +1,127 @@
+Динамическое создание
+Пример setOnMouseClicked
+result.setStyle("-fx-background-color: aqua;")
+
+        result.setBackground(new Background(new BackgroundFill(new Color(0.9,0.9,0.9,1), CornerRadii.EMPTY, Insets.EMPTY)));
+Пример setOnAction
+Spinner
+TextArea
+Canvas
+
+       GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.BLACK);
+        gc.setStroke(Color.BLACK);
+       // gc.beginPath();
+       // gc.moveTo(10,10);
+       // gc.lineTo(100,100);
+       // gc.stroke();
+        gc.strokeLine(20,20,40,40);
+        gc.fillOval(0,0,20,20);
+ 
+ 
+        FileChooser fileChooser = new FileChooser();
+
+        // Настройка фильтра для изображений
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif")
+        );
+
+        File selectedFile = fileChooser.showOpenDialog(number1.getScene().getWindow());
+        if (selectedFile.isFile()) {
+            var path = selectedFile.getPath();
+        }
+
+    
+    
+    Tabpane
+
+       // Создаем TabPane
+        TabPane tabPane = new TabPane();
+        
+        // Первая вкладка
+        Tab tab1 = new Tab("Основная");
+        tab1.setClosable(false); // Запрещаем закрытие вкладки
+        
+        VBox tab1Content = new VBox(10);
+        tab1Content.getChildren().addAll(
+            new Label("Это основная вкладка"),
+            new Button("Кнопка 1"),
+            new TextField("Текстовое поле")
+        );
+        tab1.setContent(tab1Content);
+        
+        // Вторая вкладка
+        Tab tab2 = new Tab("Настройки");
+        tab2.setClosable(false);
+        
+        GridPane tab2Content = new GridPane();
+        tab2Content.setVgap(10);
+        tab2Content.setHgap(10);
+        tab2Content.add(new Label("Настройка 1:"), 0, 0);
+        tab2Content.add(new TextField("Значение"), 1, 0);
+        tab2Content.add(new Label("Настройка 2:"), 0, 1);
+        tab2Content.add(new ComboBox<String>(), 1, 1);
+        tab2.setContent(tab2Content);
+        
+        // Третья вкладка с таблицей
+        Tab tab3 = new Tab("Данные");
+        
+        TableView<String> tableView = new TableView<>();
+        TableColumn<String, String> column = new TableColumn<>("Данные");
+        tableView.getColumns().add(column);
+        tab3.setContent(tableView);
+        
+        // Добавляем вкладки в TabPane
+        tabPane.getTabs().addAll(tab1, tab2, tab3);
+
+
+Platform.runLater(Runnable runnable); - для обновление в дополнительных потоках
+
+DatePicker (value; onAction)
+
+ColorPicker
+
+<ColorPicker fx:id="colorPicker" 
+                 value="#FF0000"
+                 onAction="#onColorChanged"/>
+
+ComboBox
+
+<ComboBox fx:id="comboBox" 
+              promptText="Выберите..."
+              onAction="#onComboBoxChanged">
+        <items>
+            <FXCollections fx:factory="observableArrayList">
+                <String fx:value="Вариант 1"/>
+                <String fx:value="Вариант 2"/>
+                <String fx:value="Вариант 3"/>
+            </FXCollections>
+        </items>
+    </ComboBox>
+
+// Создаем ComboBox
+ComboBox<String> comboBox = new ComboBox<>();
+
+// Устанавливаем свойства
+comboBox.setPromptText("Выберите...");
+
+// Создаем список элементов
+ObservableList<String> options = FXCollections.observableArrayList(
+    "Вариант 1", 
+    "Вариант 2", 
+    "Вариант 3"
+);
+
+// Устанавливаем элементы в ComboBox
+comboBox.setItems(options);
+
+
+try (BufferedReader reader = Files.newBufferedReader(Path.of("file.txt"))) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+        // Обработка каждой строки в цикле while
+        System.out.println(line);
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+}
