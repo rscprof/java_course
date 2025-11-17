@@ -44,7 +44,7 @@ jobs:
             pdflatex -interaction=nonstopmode output2.tex
           done
 
-          if [ ! -f output.pdf ]; then
+          if [ ! -f output2.pdf ]; then
             echo "Error: output.pdf not found"
             exit 1
           fi
