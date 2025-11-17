@@ -1,0 +1,60 @@
+# .github/workflows/lectures.yml
+
+name: Build and Deploy Lectures
+
+on:
+  push:
+    branches: [ main ]  # или ваша основная ветка
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install full TeX Live (with XeLaTeX and Cyrillic support)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-xetex \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-lang-cyrillic \
+            fonts-dejavu fonts-freefont-otf fonts-freefont-ttf
+
+      - name: Create output directory
+        run: mkdir -p lectures/dist
+
+      - name: Compile .tex files with XeLaTeX
+        run: |
+          cd lections
+          for texfile in lecture*.tex; do
+            if [ -f "$texfile" ]; then
+              filename="${texfile%.tex}"
+              echo "Compiling $texfile → $filename.pdf"
+              # Первый проход
+              xelatex -interaction=nonstopmode "$texfile"
+              # Второй проход (для ссылок, TOC и т.д.)
+              xelatex -interaction=nonstopmode "$texfile"
+              # Копируем PDF в целевую папку
+              mv "${filename}.pdf" ../lectures/dist/
+              # Опционально: удаляем временные файлы
+              rm -f "${filename}.aux" "${filename}.log" "${filename}.out" "${filename}.toc"
+            fi
+          done
+
+      - name: Copy .txt files
+        run: |
+          cp lections/lecture04_android_coroutines.txt lectures/dist/
+
+      - name: Deploy to pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: pages
+          keep_files: true
