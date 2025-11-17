@@ -18,7 +18,7 @@ latex_template = r"""
 \titleformat{\section}[block]{\normalfont\Large\bfseries}{}{0em}{}
 \titleformat{\subsection}[block]{\normalfont\large\bfseries}{}{0em}{}
 
-\title{Вопросы к экзамену по разработке мобильных приложений}
+\title{Вопросы к экзамену по курсу <<Программирование на Java>>}
 \author{}
 \date{}
 
