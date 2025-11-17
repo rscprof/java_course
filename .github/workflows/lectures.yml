@@ -51,10 +51,9 @@ jobs:
         run: |
           cp lections/*.txt lectures/dist/
 
-      - name: Deploy to pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Publish generated content to GitHub Pages
+        uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: pages
-          keep_files: true
+          dir: dist
+          branch: pages
+          token: ${{ secrets.ACCESS_TOKEN }}
