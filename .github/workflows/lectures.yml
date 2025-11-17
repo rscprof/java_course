@@ -27,7 +27,7 @@ jobs:
             fonts-dejavu fonts-freefont-otf fonts-freefont-ttf
 
       - name: Create output directory
-        run: mkdir -p lectures/dist
+        run: mkdir -p dist/lectures
 
       - name: Compile .tex files with XeLaTeX
         run: |
@@ -41,7 +41,7 @@ jobs:
               # Второй проход (для ссылок, TOC и т.д.)
               xelatex -interaction=nonstopmode "$texfile"
               # Копируем PDF в целевую папку
-              mv "${filename}.pdf" ../lectures/dist/
+              mv "${filename}.pdf" ../dist/lectures/
               # Опционально: удаляем временные файлы
               rm -f "${filename}.aux" "${filename}.log" "${filename}.out" "${filename}.toc"
             fi
@@ -49,7 +49,7 @@ jobs:
 
       - name: Copy .txt files
         run: |
-          cp lections/*.txt lectures/dist/
+          cp lections/*.txt dist/lectures/
 
       - name: Publish generated content to GitHub Pages
         uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
