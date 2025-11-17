@@ -1,0 +1,29 @@
+name: Build exam document
+on: [push]
+jobs:
+  build_latex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v2
+      - name: create list of questions latex document
+        shell: bash
+        run: cd exam && python3 generate_list.py
+      - name: create document with questions
+        uses: dante-ev/latex-action@latest
+        with:
+          root_file: exam/exam_document.tex
+          compiler: pdflatex
+      - name: create list of questions latex document
+        shell: bash
+        run: ls -la 
+      - name: copy questions
+        shell: bash
+        run: mkdir dist && cp exam_document.pdf dist/
+      - name: Publish generated content to GitHub Pages
+        uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
+        with:
+          dir: dist
+          branch: pages
+          token: ${{ secrets.ACCESS_TOKEN }}
+          

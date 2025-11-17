@@ -1,0 +1,25 @@
+Java: многопоточность в Java, понятие потока и процесса
+Java: создание потоков - Thread, Runnable, ExecutorService
+Java: синхронизация потоков, ключевое слово synchronized
+Java: взаимная блокировка (deadlock), причины и методы предотвращения
+Java: гонки данных (race conditions), потокобезопасность
+Java: атомарные переменные (AtomicInteger, AtomicLong), назначение
+Java: пул потоков, создание фиксированного и однопоточного пула
+Java: функциональные интерфейсы Predicate и Function
+Java: потокобезопасные коллекции
+JavaFX: архитектура - Stage, Scene, контейнеры
+JavaFX: компоновка - HBox, VBox, GridPane, AnchorPane, Pane, Canvas, TabPane
+JavaFX: элементы управления  - TextField, Label, Button, CheckBox
+JavaFX: выбор значений - ComboBox, RadioButton, DatePicker, ColorPicker
+JavaFX: работа с файлами
+JavaFX: использование TableView
+JDBC: подключение SQLite 
+JDBC: выполнение SQL запросов в Java, PreparedStatement, ResultSet
+Spring Boot: архитектура, аннотации @SpringBootApplication, @RestController
+Spring Boot: : конфигурация, application.properties, встроенный Tomcat
+Rest API: описание, HTTP методы и статусы
+Spring Boot: JPA, аннотации @Entity, @Id, CRUD репозитории
+Spring Data: обработка ошибок, @ControllerAdvice, @ExceptionHandler
+Spring Data: работа с базой данных H2, конфигурация
+Rest API: тестирование REST API
+Spring Boot: валидация данных, аннотации @Valid, @NotNull
