@@ -1,0 +1,158 @@
+Spring WEB
+H2 Database
+Spring boot DevTools
+Spring Data JPA
+Lombok
+Validation
+
+
+Java 17/21
+
+package com.example.demo.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "notes")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+@EqualsAndHashCode
+public class Note {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false,length = 100)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+}
+
+
+package com.example.demo.repositories;
+
+import com.example.demo.model.Note;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface NoteRepository extends JpaRepository<Note, Long> {
+}
+
+Замечание: Spring Boot сканирует все классы внутри пакета на предмет некоторых аннотаций, 
+включая @Repository, заносит их в ApplicationContext, далее происходит автоматический DI
+
+record NoteCreateDto(
+        @NotEmpty
+        @Size(max = 100,
+                message = "Слишком длинная строка")
+        String title,
+
+        @Size(max = 10000,
+                message = "Слишком длинная строка")
+        String content
+) {
+
+}
+
+
+
+package com.example.demo.controllers;
+
+import com.example.demo.model.Note;
+import com.example.demo.repositories.NoteRepository;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class NoteController {
+
+    private final NoteRepository noteRepository;
+
+    @GetMapping
+    public List<Note> getAllNotes() {
+        return noteRepository.findAll();
+    }
+
+    //ResponseEntity для корректных статусов
+    @PostMapping
+    public ResponseEntity<Note> createNote(@RequestBody @Valid NoteCreateDto noteDto) {
+        var note = Note.builder().title(noteDto.title()).content(noteDto.content()).build();
+        var saved = noteRepository.save(note);
+        return new ResponseEntity(saved,HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Note> updateNote(
+            @PathVariable Long id,                  // или Long, если ещё не перешёл на UUID
+            @RequestBody @Valid NoteCreateDto dto) { // @Valid — обязательно для валидации
+
+        // Возвращаем готовый ResponseEntity сразу через orElseThrow + map
+        return noteRepository.findById(id)
+                .map(existingNote -> {
+                    existingNote.setTitle(dto.title());
+                    existingNote.setContent(dto.content());
+                    Note updatedNote = noteRepository.save(existingNote);
+                    return ResponseEntity.ok(updatedNote);         // 200 OK
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());  // 404 Not Found
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNote(@PathVariable Long id) {
+        noteRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+package com.example.demo.controllers;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage()));
+
+        return ResponseEntity.badRequest().body(errors);
+    }
+}
+
+// Валидация
+
+@NotNull        // не null (для объектов)
+@NotEmpty       // не null и не пустая коллекция/строка
+@NotBlank       // не null, не пустая и не состоит только из пробелов (лучше всего для строк)
+@Size(min=, max=)
+@Min/@Max       // для чисел
+@Positive/@PositiveOrZero
+@Past/@Future   // для дат
+@Email          // простая проверка email
+@Pattern(regexp = "...") // регулярка
+@AssertTrue/@AssertFalse

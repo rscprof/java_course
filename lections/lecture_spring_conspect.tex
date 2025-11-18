@@ -1,0 +1,336 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,12pt]{article}
+
+% Поддержка Unicode и шрифтов для кроссплатформенности
+\usepackage{fontspec}
+\usepackage{polyglossia}
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+
+% Настройки русского языка
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+\defaultfontfeatures{Ligatures=TeX}
+
+% Геометрия страницы
+\usepackage[a4paper, margin=2cm]{geometry}
+
+% Цвета для подсветки кода
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Подсветка синтаксиса для Java
+\usepackage{listings}
+\lstdefinestyle{java}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    framesep=3pt,
+    rulecolor=\color{gray},
+    xleftmargin=10pt,
+    framexleftmargin=10pt,
+    framexrightmargin=5pt,
+    framextopmargin=2pt,
+    framexbottommargin=2pt
+}
+
+\lstset{style=java}
+
+% Заголовки разделов
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Интервалы
+\usepackage{setspace}
+\onehalfspacing
+
+% Гиперссылки
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+% Названия разделов на русском
+\addto\captionsrussian{\renewcommand{\contentsname}{Содержание}}
+\addto\captionsrussian{\renewcommand{\listfigurename}{Список рисунков}}
+\addto\captionsrussian{\renewcommand{\listtablename}{Список таблиц}}
+
+% Метаданные документа
+\title{Современная разработка на Spring Boot: REST API с валидацией и базой данных}
+\author{Конспект по разработке веб-приложений}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Введение}
+Данный конспект посвящен созданию RESTful API с использованием современного стека технологий Spring Boot. Рассматриваются ключевые компоненты для быстрой разработки веб-приложений с поддержкой базы данных, валидации данных и автоматического конфигурирования.
+
+\subsection{Технологический стек}
+\begin{enumerate}
+\item \textbf{Spring WEB} --- основной модуль для создания веб-приложений и REST API
+    \item \textbf{H2 Database} --- in-memory база данных для разработки и тестирования
+    \item \textbf{Spring Boot DevTools} --- инструменты для ускорения разработки (автоматическая перезагрузка)
+    \item \textbf{Spring Data JPA} --- абстракция для работы с базами данных через JPA
+    \item \textbf{Lombok} --- библиотека для автоматической генерации шаблонного кода
+    \item \textbf{Validation} --- валидация входных данных с помощью Jakarta Validation
+    \item \textbf{Java 17/21} --- современные LTS-версии Java с улучшенными возможностями
+\end{enumerate}
+
+\section{Модель данных}
+Создание сущности для работы с заметками. Используется аннотации JPA для маппинга на таблицу базы данных.
+
+\subsection{Сущность Note}
+\begin{lstlisting}[language=Java,caption=Модель данных: класс Note]
+package com.example.demo.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "notes")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+@EqualsAndHashCode
+public class Note {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false,length = 100)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+}
+\end{lstlisting}
+
+\textbf{Пояснения к аннотациям:}
+\begin{enumerate}
+\item \texttt{@Entity} --- помечает класс как JPA-сущность
+    \item \texttt{@Table(name = "notes")} --- указывает имя таблицы в базе данных
+    \item \texttt{@Id} и \texttt{@GeneratedValue} --- определяют первичный ключ и стратегию генерации
+    \item \texttt{@Column} --- настраивает параметры колонки (обязательность, размер, тип)
+    \item \texttt{@Getter}, \texttt{@Setter} --- генерируют геттеры и сеттеры (Lombok)
+    \item \texttt{@NoArgsConstructor}, \texttt{@AllArgsConstructor} --- генерируют конструкторы без параметров и со всеми параметрами
+    \item \texttt{@Builder} --- создает паттерн Builder для удобного создания объектов
+    \item \texttt{@ToString}, \texttt{@EqualsAndHashCode} --- генерируют методы toString(), equals() и hashCode()
+\end{enumerate}
+
+\section{Репозиторий данных}
+Spring Data JPA предоставляет готовые CRUD-операции через наследование от JpaRepository.
+
+\subsection{NoteRepository}
+\begin{lstlisting}[language=Java,caption=Репозиторий для работы с заметками]
+package com.example.demo.repositories;
+
+import com.example.demo.model.Note;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface NoteRepository extends JpaRepository<Note, Long> {
+}
+\end{lstlisting}
+
+\textbf{Важное замечание:} Spring Boot автоматически сканирует все классы внутри пакета (и подпакетов) на предмет аннотаций, включая \texttt{@Repository}. Обнаруженные компоненты регистрируются в ApplicationContext, после чего происходит автоматическая инъекция зависимостей (DI).
+
+\section{DTO и валидация}
+Для передачи данных между клиентом и сервером используются DTO (Data Transfer Objects) с валидацией.
+
+\subsection{NoteCreateDto с валидацией}
+\begin{lstlisting}[language=Java,caption=DTO для создания заметки с валидацией]
+record NoteCreateDto(
+        @NotEmpty
+        @Size(max = 100,
+                message = "Слишком длинная строка")
+        String title,
+
+        @Size(max = 10000,
+                message = "Слишком длинная строка")
+        String content
+) {
+
+}
+\end{lstlisting}
+
+\textbf{Аннотации валидации:}
+\begin{enumerate}
+\item \texttt{@NotNull} --- поле не должно быть null (для объектов)
+    \item \texttt{@NotEmpty} --- поле не null и не пустая коллекция/строка
+    \item \texttt{@NotBlank} --- не null, не пустая и не состоит только из пробелов (лучше всего для строк)
+    \item \texttt{@Size(min=, max=)} --- ограничение на размер строки или коллекции
+    \item \texttt{@Min/@Max} --- ограничение для числовых значений
+    \item \texttt{@Positive/@PositiveOrZero} --- положительные числа
+    \item \texttt{@Past/@Future} --- проверка дат
+    \item \texttt{@Email} --- базовая проверка email-адреса
+    \item \texttt{@Pattern(regexp = "...")} --- проверка по регулярному выражению
+    \item \texttt{@AssertTrue/@AssertFalse} --- кастомная логическая валидация
+\end{enumerate}
+
+\section{Контроллер REST API}
+Реализация CRUD-операций для управления заметками.
+
+\subsection{NoteController}
+\begin{lstlisting}[language=Java,caption=REST контроллер для работы с заметками]
+package com.example.demo.controllers;
+
+import com.example.demo.model.Note;
+import com.example.demo.repositories.NoteRepository;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class NoteController {
+
+    private final NoteRepository noteRepository;
+
+    @GetMapping
+    public List<Note> getAllNotes() {
+        return noteRepository.findAll();
+    }
+
+    //ResponseEntity для корректных статусов
+    @PostMapping
+    public ResponseEntity<Note> createNote(@RequestBody @Valid NoteCreateDto noteDto) {
+        var note = Note.builder().title(noteDto.title()).content(noteDto.content()).build();
+        var saved = noteRepository.save(note);
+        return new ResponseEntity(saved,HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Note> updateNote(
+            @PathVariable Long id,                  // или Long, если ещё не перешёл на UUID
+            @RequestBody @Valid NoteCreateDto dto) { // @Valid — обязательно для валидации
+
+        // Возвращаем готовый ResponseEntity сразу через orElseThrow + map
+        return noteRepository.findById(id)
+                .map(existingNote -> {
+                    existingNote.setTitle(dto.title());
+                    existingNote.setContent(dto.content());
+                    Note updatedNote = noteRepository.save(existingNote);
+                    return ResponseEntity.ok(updatedNote);         // 200 OK
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());  // 404 Not Found
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNote(@PathVariable Long id) {
+        noteRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+\end{lstlisting}
+
+\textbf{Ключевые особенности:}
+\begin{enumerate}
+\item \texttt{@RestController} --- комбинирует @Controller и @ResponseBody
+    \item \texttt{@RequiredArgsConstructor} --- генерирует конструктор для final-полей (Lombok)
+    \item \texttt{ResponseEntity} --- позволяет контролировать HTTP-статусы и заголовки
+    \item \texttt{@Valid} --- активирует валидацию DTO перед обработкой
+    \item Функциональный подход с \texttt{map()} и \texttt{orElseGet()} для обработки	Optional
+    \item Корректные HTTP-статусы: 201 Created, 200 OK, 404 Not Found, 204 No Content
+\end{enumerate}
+
+\section{Глобальная обработка ошибок}
+Обработка исключений валидации на уровне приложения.
+
+\subsection{GlobalExceptionHandler}
+\begin{lstlisting}[language=Java,caption=Глобальный обработчик исключений]
+package com.example.demo.controllers;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage()));
+
+        return ResponseEntity.badRequest().body(errors);
+    }
+}
+\end{lstlisting}
+
+\textbf{Принцип работы:}
+\begin{enumerate}
+\item \texttt{@RestControllerAdvice} --- применяет обработчики ко всем контроллерам
+    \item \texttt{@ExceptionHandler} --- перехватывает конкретные типы исключений
+    \item \texttt{MethodArgumentNotValidException} --- генерируется при провале валидации
+    \item Формируется понятный JSON-ответ с ошибками для каждого поля
+    \item Возвращается HTTP-статус 400 Bad Request
+\end{enumerate}
+
+\section{Рекомендации по разработке}
+\begin{enumerate}
+\item \textbf{Валидация} --- всегда используйте \texttt{@Valid} для DTO в контроллерах
+    \item \textbf{HTTP-статусы} --- возвращайте соответствующие статусы для каждой операции
+    \item \textbf{DTO} --- никогда не передавайте сущности напрямую в клиент, используйте DTO
+    \item \textbf{Иммутабельность} --- используйте record для DTO вместо классов
+    \item \textbf{Обработка ошибок} --- централизованная обработка исключений улучшает поддерживаемость
+    \item \textbf{Производительность} --- для продакшена замените H2 на PostgreSQL или MySQL
+\end{enumerate}
+
+\section{Заключение}
+Представленный стек технологий позволяет быстро создавать надежные REST API с минимальным количеством шаблонного кода. Использование Lombok, Spring Data JPA и валидации значительно ускоряет разработку, а правильная обработка ошибок и HTTP-статусов делает API профессиональным и удобным для клиентов.
+
+Данный подход легко масштабируется и может быть дополнен аутентификацией, авторизацией, кэшированием и другими enterprise-функциями при необходимости.
+
+\end{document}
