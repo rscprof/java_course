@@ -1,0 +1,1050 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{polyglossia}
+\setmainlanguage{russian}
+\setotherlanguage{english}
+
+\usepackage{fontspec}
+
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+
+% Настройки русского языка
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+\defaultfontfeatures{Ligatures=TeX}
+
+\usepackage{geometry}
+\geometry{margin=2cm}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{sectsty}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\definecolor{myblue}{rgb}{0.0,0.4,0.8}
+\definecolor{explanation}{rgb}{0.2,0.5,0.2}
+\definecolor{advanced}{rgb}{0.7,0.2,0.2}
+
+\lstdefinestyle{java}{
+    language=Java,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{myblue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{red!70!black},
+    tabsize=4,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{codebg},
+    showstringspaces=false,
+    keepspaces=true
+}
+
+\lstdefinestyle{xml}{
+    language=XML,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red!70!black},
+    tabsize=4,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{codebg},
+}
+
+\sectionfont{\color{myblue}\Large\bfseries}
+\subsectionfont{\color{myblue}\large\bfseries}
+
+\hypersetup{colorlinks=true, linkcolor=myblue}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{JavaFX + SQLite — CRUD с нуля (полная версия)}
+
+\title{\Huge\textbf{JavaFX + SQLite}\\[\baselineskip]
+       \LARGE Полное CRUD-приложение для новичков \\ с обработкой ошибок}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\section*{Этап 1 — Пустое окно JavaFX + Gradle}
+
+\subsection{build.gradle.kts}
+\begin{lstlisting}[style=java]
+plugins {
+    id("java")
+    id("application")
+    id("org.openjfx.javafxplugin") version "0.1.0"
+}
+
+javafx {
+    version = "21"
+    modules("javafx.controls", "javafx.fxml")
+}
+
+application {
+    mainClass.set("org.example.notes.App")
+}
+
+repositories { mavenCentral() }
+
+dependencies {
+    implementation("org.xerial:sqlite-jdbc:3.46.1.2")
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к build.gradle.kts:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Gradle Kotlin DSL}}: Это не обычный Java-код, а Kotlin-скрипт для настройки сборки Gradle. Kotlin DSL предоставляет типобезопасную и интуитивно понятную конфигурацию по сравнению с Groovy DSL.
+    
+    \item \textcolor{advanced}{\textbf{Плагины}}:
+    \begin{itemize}
+        \item \texttt{id("java")} — базовый плагин для Java-проектов
+        \item \texttt{id("application")} — позволяет создавать исполняемые приложения
+        \item \texttt{id("org.openjfx.javafxplugin")} — специальный плагин для интеграции JavaFX с Gradle. Версия "0.1.0" указывает на конкретную реализацию этого плагина.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{JavaFX конфигурация}}:
+    \begin{itemize}
+        \item \texttt{version = "21"} — указывает версию JavaFX SDK. JavaFX с версии 11 больше не входит в состав JDK и должен подключаться отдельно.
+        \item \texttt{modules("javafx.controls", "javafx.fxml")} — подключает только необходимые модули JavaFX. Это оптимизирует размер итогового приложения. \texttt{javafx.controls} содержит все UI-компоненты (кнопки, таблицы и т.д.), а \texttt{javafx.fxml} необходим для загрузки интерфейсов из FXML-файлов.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Application конфигурация}}:
+    \begin{itemize}
+        \item \texttt{mainClass.set("org.example.notes.App")} — указывает класс с методом \texttt{main()}, который будет точкой входа приложения. В JavaFX это должен быть класс, наследующийся от \texttt{javafx.application.Application}.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Репозитории и зависимости}}:
+    \begin{itemize}
+        \item \texttt{mavenCentral()} — указывает Gradle искать зависимости в центральном Maven репозитории.
+        \item \texttt{implementation("org.xerial:sqlite-jdbc:3.46.1.2")} — подключает SQLite JDBC драйвер. Префикс \texttt{implementation} означает, что эта зависимость нужна только для компиляции и выполнения, но не будет транзитивно передаваться другим проектам.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему именно SQLite?}} SQLite — это встраиваемая база данных без необходимости отдельного сервера. Она хранит данные в одном файле, что идеально подходит для десктоп-приложений и обучения. JDBC драйвер позволяет работать с SQLite через стандартный JDBC API Java.
+\end{itemize}
+\end{mdframed}
+
+\subsection{src/main/java/org/example/notes/App.java}
+\begin{lstlisting}[style=java]
+package org.example.notes;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import org.example.notes.db.Database;
+
+public class App extends Application {
+
+    @Override
+    public void start(Stage stage) throws Exception {
+        Database.init(); // создаём файл БД и таблицу
+
+        FXMLLoader loader = new FXMLLoader(
+            App.class.getResource("/main-view.fxml"));
+
+        Scene scene = new Scene(loader.load(), 900, 600);
+        stage.setTitle("Заметки");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public static void main(String[] args) {
+        launch();
+    }
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к App.java:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{JavaFX Application Lifecycle}}:
+    \begin{itemize}
+        \item Класс \texttt{App} наследуется от \texttt{javafx.application.Application}, что делает его точкой входа для JavaFX приложения.
+        \item Метод \texttt{start(Stage stage)} вызывается автоматически JavaFX после инициализации. Параметр \texttt{Stage} представляет основное окно приложения.
+        \item Метод \texttt{main(String[] args)} обязательно должен вызывать \texttt{launch()}, который запускает JavaFX runtime и инициализирует жизненный цикл приложения.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{FXMLLoader}}:
+    \begin{itemize}
+        \item \texttt{FXMLLoader} — это класс, который загружает FXML-файлы и создает соответствующие Java-объекты для UI компонентов.
+        \item \texttt{App.class.getResource("/main-view.fxml")} — использует ClassLoader для поиска ресурса (FXML файла) в classpath. Префикс "/" означает поиск из корня ресурсов (src/main/resources).
+        \item \texttt{loader.load()} возвращает корневой узел (Node) интерфейса, который затем передается в \texttt{Scene}.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Scene и Stage}}:
+    \begin{itemize}
+        \item \texttt{Scene} — это контейнер, который управляет всем содержимым окна (всеми узлами графа сцены).
+        \item \texttt{new Scene(loader.load(), 900, 600)} — создает сцену с заданными размерами 900x600 пикселей.
+        \item \texttt{stage.setScene(scene)} — устанавливает сцену в окно.
+        \item \texttt{stage.show()} — делает окно видимым для пользователя.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Database.init()}}:
+    \begin{itemize}
+        \item Этот вызов инициализирует базу данных перед показом интерфейса. Это важно, потому что:
+        \begin{itemize}
+            \item Гарантирует, что БД готова к работе при старте приложения
+            \item Избегает проблем с отсутствующими таблицами при первой загрузке
+            \item Выполняется в основном потоке JavaFX (UI thread), что приемлемо для инициализации, но не для длительных операций с БД
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Пакетная структура}}: Архитектура приложения разделена по пакетам:
+    \begin{itemize}
+        \item \texttt{org.example.notes} — корневой пакет с основным классом приложения
+        \item \texttt{org.example.notes.db} — пакет для работы с базой данных
+        \item \texttt{org.example.notes.model} — пакет для моделей данных (сущностей)
+        \item \texttt{org.example.notes.controller} — пакет для JavaFX контроллеров
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\section*{Этап 2 — База данных SQLite}
+
+\subsection{src/main/java/org/example/notes/db/Database.java}
+\begin{lstlisting}[style=java]
+package org.example.notes.db;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Database {
+    private static final String URL = "jdbc:sqlite:notes.db";
+
+    public static Connection connect() throws SQLException {
+        return DriverManager.getConnection(URL);
+    }
+
+    public static void init() {
+        String sql = """
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL
+            );
+            """;
+        try (var conn = connect();
+             var stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось создать БД", e);
+        }
+    }
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к Database.java:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{JDBC (Java Database Connectivity)}}:
+    \begin{itemize}
+        \item JDBC — это стандартный API Java для работы с реляционными базами данных.
+        \item \texttt{DriverManager.getConnection(URL)} — загружает подходящий JDBC драйвер (в нашем случае SQLite) и создает соединение с базой данных.
+        \item URL \texttt{"jdbc:sqlite:notes.db"} использует синтаксис JDBC: \texttt{jdbc:<subprotocol>:<subname>}. Здесь \texttt{sqlite} — это подпротокол, а \texttt{notes.db} — имя файла базы данных в текущей директории.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Text Blocks (Java 15+)}}:
+    \begin{itemize}
+        \item \verb|"""\n...\n"""| — это многострочные текстовые блоки, введенные в Java 15. Они значительно улучшают читаемость многострочных SQL-запросов и XML/JSON данных.
+        \item Преимущества перед обычными строками:
+        \begin{itemize}
+            \item Сохраняют форматирование (отступы, переносы строк)
+            \item Не требуют экранирования кавычек внутри
+            \item Легко читаются и редактируются
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Try-with-resources (Java 7+)}}:
+    \begin{itemize}
+        \item \texttt{try (var conn = connect(); var stmt = conn.createStatement())} — автоматически закрывает ресурсы (\texttt{Connection} и \texttt{Statement}) после выполнения блока, даже если произойдет исключение.
+        \item Это предотвращает утечки памяти и соединений с базой данных.
+        \item \texttt{var} (Java 10+) позволяет компилятору выводить тип переменной автоматически.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{SQLite особенности}}:
+    \begin{itemize}
+        \item \texttt{AUTOINCREMENT} в SQLite работает иначе, чем в других СУБД. Он гарантирует, что ID никогда не будет повторно использован, даже если записи удалялись.
+        \item \texttt{TEXT} тип используется вместо \texttt{VARCHAR}, так как в SQLite нет разницы между этими типами (все строки хранятся как TEXT).
+        \item \texttt{NOT NULL} ограничение гарантирует, что поля заголовка и содержания не могут быть пустыми.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Статический метод init()}}:
+    \begin{itemize}
+        \item Метод \texttt{init()} объявлен как \texttt{static}, потому что он вызывается из статического контекста (\texttt{main} метода).
+        \item Он создает таблицу при первой инициализации приложения. Ключевое слово \texttt{IF NOT EXISTS} предотвращает ошибку, если таблица уже существует.
+        \item При возникновении \texttt{SQLException} выбрасывается \texttt{RuntimeException}, так как невозможность создать БД на старте приложения — критическая ошибка.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\section*{Этап 3 — Модель заметки (record + JavaBean-геттеры)}
+
+\subsection{src/main/java/org/example/notes/model/Note.java}
+\begin{lstlisting}[style=java]
+package org.example.notes.model;
+
+public record Note(int id, String title, String content) {
+
+    // Конструктор для новых заметок (id будет 0)
+    public Note(String title, String content) {
+        this(0, title, content);
+    }
+
+    // ←←← ВАЖНО! Добавляем обычные геттеры с префиксом get
+    // Это нужно, чтобы PropertyValueFactory в FXML заработал с record
+    public int getId() { return id; }
+    public String getTitle() { return title; }
+    public String getContent() { return content; }
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к Note.java:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Java Records (Java 16+)}}:
+    \begin{itemize}
+        \item \texttt{record} — это специальный тип класса, введенный в Java 16 для создания неизменяемых (immutable) классов данных с минимальным количеством кода.
+        \item Компилятор автоматически генерирует:
+        \begin{itemize}
+            \item Приватные final поля (\texttt{id}, \texttt{title}, \texttt{content})
+            \item Конструктор с параметрами
+            \item Методы \texttt{equals()}, \texttt{hashCode()}, \texttt{toString()}
+            \item "Канонические" геттеры (\texttt{id()}, \texttt{title()}, \texttt{content()})
+        \end{itemize}
+        \item Records идеально подходят для DTO (Data Transfer Objects) и моделей данных.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Совместимость с JavaFX}}:
+    \begin{itemize}
+        \item JavaFX компоненты (особенно \texttt{PropertyValueFactory}) ожидают, что у моделей будут геттеры в формате JavaBean: \texttt{getPropertyName()} или свойства в формате \texttt{propertyNameProperty()}.
+        \item Record генерирует геттеры без префикса \texttt{get} (просто \texttt{id()}, \texttt{title()}), что несовместимо с \texttt{PropertyValueFactory}.
+        \item Решение: явно объявить обычные геттеры с префиксом \texttt{get} для каждого поля. Это сохраняет все преимущества record и обеспечивает совместимость с JavaFX.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Компактный конструктор для новых записей}}:
+    \begin{itemize}
+        \item Конструктор \texttt{public Note(String title, String content)} позволяет создавать новые заметки без указания ID (который будет сгенерирован базой данных).
+        \item Значение \texttt{0} для ID — это соглашение, указывающее, что это новая запись, которая еще не сохранена в базе.
+        \item Такой подход упрощает работу с новыми объектами в коде интерфейса.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему это важно}}:
+    \begin{itemize}
+        \item Без явных геттеров с префиксом \texttt{get} таблица JavaFX (\texttt{TableView}) будет пустой, так как \texttt{PropertyValueFactory} не сможет найти нужные свойства.
+        \item Это пример того, как современные Java-фичи (records) могут требовать адаптации для работы с более старыми фреймворками (JavaFX, который изначально проектировался под JavaBeans).
+        \item Такой подход сохраняет неизменяемость (\texttt{final} поля) и простоту records, обеспечивая при этом необходимую совместимость.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Альтернативные подходы}}:
+    \begin{itemize}
+        \item Использовать обычный класс вместо record (потеря компактности)
+        \item Использовать \texttt{ReadOnlyObjectWrapper} и свойства JavaFX (более сложный код)
+        \item Создать отдельный класс-адаптер (избыточность)
+        \item Текущее решение — оптимальный баланс между современностью и совместимостью.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Почему мы добавили getId(), getTitle(), getContent()?} \\
+\texttt{PropertyValueFactory} ищет именно методы с префиксом \texttt{get…} или \texttt{…Property()}.  
+У record’ов геттеры называются просто \texttt{id()}, \texttt{title()}, поэтому без этих трёх строк таблица будет пустой.  
+Добавив обычные геттеры — получаем и лаконичность record, и полную совместимость с FXML.
+\end{mdframed}
+
+\section*{Этап 4 — Показываем все заметки в таблице (Read)}
+
+\subsection{src/main/java/org/example/notes/db/NoteDao.java}
+\begin{lstlisting}[style=java]
+package org.example.notes.db;
+
+import org.example.notes.model.Note;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class NoteDao {
+
+    public List<Note> findAll() {
+        var list = new ArrayList<Note>();
+        String sql = "SELECT id, title, content FROM notes ORDER BY id";
+        try (Connection conn = Database.connect();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                list.add(new Note(
+                    rs.getInt("id"),
+                    rs.getString("title"),
+                    rs.getString("content")
+                ));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка чтения заметок", e);
+        }
+        return list;
+    }
+
+    public void insert(Note note) { /* будет дальше */ }
+    public void update(Note note) { /* будет дальше */ }
+    public void delete(int id) { /* будет дальше */ }
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к NoteDao.java:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Паттерн DAO (Data Access Object)}}:
+    \begin{itemize}
+        \item DAO — это паттерн проектирования, который абстрагирует и инкапсулирует все операции доступа к данным.
+        \item Преимущества:
+        \begin{itemize}
+            \item Разделение бизнес-логики и логики доступа к данным
+            \item Легкость изменения источника данных (например, с SQLite на PostgreSQL)
+            \item Централизованная обработка ошибок работы с БД
+            \item Повторное использование кода доступа к данным
+        \end{itemize}
+        \item В данном случае \texttt{NoteDao} отвечает только за операции с заметками (\texttt{CRUD}).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{JDBC ResultSet обработка}}:
+    \begin{itemize}
+        \item \texttt{ResultSet rs = stmt.executeQuery(sql)} — выполняет SQL-запрос и возвращает результат в виде объекта \texttt{ResultSet}.
+        \item \texttt{while (rs.next())} — перемещает курсор на следующую строку результата. Возвращает \texttt{false}, когда строк больше нет.
+        \item \texttt{rs.getInt("id")} и \texttt{rs.getString("title")} — получают значения столбцов по имени. Важно использовать точные имена столбцов из SQL-запроса.
+        \item Преобразование результата в объекты \texttt{Note} происходит сразу при чтении, что упрощает дальнейшую работу с данными.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Try-with-resources для ResultSet}}:
+    \begin{itemize}
+        \item \texttt{try} блок включает не только \texttt{Connection} и \texttt{Statement}, но и \texttt{ResultSet}.
+        \item Это гарантирует, что все ресурсы будут закрыты, даже если возникнет исключение при обработке результатов.
+        \item Закрытие \texttt{ResultSet} автоматически закрывает связанный с ним \texttt{Statement} и \texttt{Connection} (но лучше явно закрывать все).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Обработка исключений в DAO}}:
+    \begin{itemize}
+        \item \texttt{SQLException} перехватывается и оборачивается в \texttt{RuntimeException} с понятным сообщением.
+        \item Это упрощает обработку ошибок на уровне контроллера или сервиса.
+        \item Параметр \texttt{e} в конструкторе \texttt{RuntimeException} сохраняет оригинальное исключение (cause), что помогает в отладке.
+        \item В продакшен-коде здесь можно добавить логирование ошибки.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему List вместо ObservableList?}}:
+    \begin{itemize}
+        \item DAO должен возвращать просто данные, а не UI-зависимые типы (\texttt{ObservableList} из JavaFX).
+        \item \texttt{ObservableList} создается в контроллере, когда данные готовы для отображения.
+        \item Это сохраняет разделение ответственности: DAO работает с данными, контроллер — с представлением.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{SQL-запрос особенности}}:
+    \begin{itemize}
+        \item \texttt{ORDER BY id} гарантирует, что заметки всегда будут отсортированы по возрастанию ID.
+        \item Явное указание столбцов (\texttt{SELECT id, title, content}) лучше, чем \texttt{SELECT *}, так как:
+        \begin{itemize}
+            \item Код становится более устойчивым к изменениям структуры таблицы
+            \item Четко видно, какие данные запрашиваются
+            \item Может улучшить производительность (особенно если в таблице много столбцов)
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\subsection{src/main/resources/main-view.fxml — полный интерфейс}
+\begin{lstlisting}[style=xml]
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.notes.controller.MainController"
+      spacing="20" padding="20">
+
+    <Label text="Мои заметки" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+    <HBox spacing="10">
+        <TextField fx:id="titleField" promptText="Заголовок" prefWidth="250"/>
+        <TextField fx:id="contentField" promptText="Содержание" HBox.hgrow="ALWAYS"/>
+        <Button text="Сохранить" onAction="#saveNote"/>
+    </HBox>
+
+    <TableView fx:id="table" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn text="ID" prefWidth="60">
+                <cellValueFactory><PropertyValueFactory property="id"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Заголовок" prefWidth="200">
+                <cellValueFactory><PropertyValueFactory property="title"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Содержание" prefWidth="500">
+                <cellValueFactory><PropertyValueFactory property="content"/></cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+
+    <Button text="Удалить выбранную" onAction="#deleteNote"
+            style="-fx-background-color: #dc3545; -fx-text-fill: white;"/>
+</VBox>
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к main-view.fxml:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{FXML — декларативный язык разметки для JavaFX}}:
+    \begin{itemize}
+        \item FXML позволяет описывать UI интерфейс в XML-формате, разделяя представление и логику.
+        \item Преимущества:
+        \begin{itemize}
+            \item Визуальное проектирование интерфейса (можно использовать Scene Builder)
+            \item Легкость изменения дизайна без перекомпиляции Java-кода
+            \item Четкое разделение ответственности (дизайн vs бизнес-логика)
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Пространства имен (namespaces)}}:
+    \begin{itemize}
+        \item \texttt{xmlns="http://javafx.com/javafx/21"} — указывает версию JavaFX, используемую для этого FXML.
+        \item \texttt{xmlns:fx="http://javafx.com/fxml/1"} — пространство имен для FXML-специфичных атрибутов (например, \texttt{fx:id}, \texttt{fx:controller}).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{JavaFX Layout Managers}}:
+    \begin{itemize}
+        \item \texttt{VBox} — вертикальный контейнер, располагает дочерние элементы сверху вниз.
+        \item \texttt{HBox} — горизонтальный контейнер, располагает дочерние элементы слева направо.
+        \item \texttt{spacing="20"} — расстояние между дочерними элементами в контейнере.
+        \item \texttt{padding="20"} — внутренние отступы контейнера.
+        \item \texttt{VBox.vgrow="ALWAYS"} и \texttt{HBox.hgrow="ALWAYS"} — определяют, как компоненты растягиваются при изменении размера окна:
+        \begin{itemize}
+            \item \texttt{ALWAYS} означает, что компонент займет все доступное пространство
+            \item Это критически важно для \texttt{TableView}, чтобы она заполняла свободное место
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{TableView и TableColumn}}:
+    \begin{itemize}
+        \item \texttt{TableView} — компонент для отображения табличных данных.
+        \item \texttt{TableColumn} определяет столбцы таблицы.
+        \item \texttt{cellValueFactory} определяет, как извлекать значение для каждой ячейки:
+        \begin{itemize}
+            \item \texttt{PropertyValueFactory} использует Java Reflection для вызова геттеров модели
+            \item \texttt{property="id"} ищет метод \texttt{getId()} или \texttt{idProperty()} в объекте \texttt{Note}
+            \item Без явных геттеров в record это не работало бы
+        \end{itemize}
+        \item \texttt{prefWidth} задает предпочтительную ширину столбцов в пикселях.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Стилизация через CSS}}:
+    \begin{itemize}
+        \item \texttt{style="-fx-font-size: 24px; -fx-font-weight: bold;"} — встроенные CSS-стили для JavaFX.
+        \item \texttt{-fx-background-color: \#dc3545} — цвет фона кнопки (красный Bootstrap цвет для опасных действий).
+        \item \texttt{-fx-text-fill: white} — белый цвет текста.
+        \item JavaFX использует CSS-подобный синтаксис для стилизации, но с префиксами \texttt{-fx-}.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Обработка событий}}:
+    \begin{itemize}
+        \item \texttt{onAction="\#saveNote"} — связывает событие нажатия кнопки с методом \texttt{saveNote()} в контроллере.
+        \item \texttt{fx:id="titleField"} — присваивает уникальный идентификатор компоненту, чтобы контроллер мог получить к нему доступ через \texttt{@FXML} аннотации.
+        \item \texttt{fx:controller="org.example.notes.controller.MainController"} — указывает класс-контроллер, который будет обрабатывать события и логику этого FXML.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему HBox внутри VBox?}}:
+    \begin{itemize}
+        \item Такая вложенность контейнеров создает гибкую и адаптивную компоновку:
+        \begin{itemize}
+            \item Верхний уровень (VBox) управляет вертикальным расположением
+            \item Средний уровень (HBox) управляет горизонтальным расположением полей ввода
+            \item \texttt{TableView} растягивается по вертикали (\texttt{VBox.vgrow="ALWAYS"})
+            \item Поле содержания растягивается по горизонтали (\texttt{HBox.hgrow="ALWAYS"})
+        \end{itemize}
+        \item Это стандартная практика в JavaFX для создания отзывчивых интерфейсов.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\subsection{src/main/java/org/example/notes/controller/MainController.java — основа}
+\begin{lstlisting}[style=java]
+package org.example.notes.controller;
+
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import org.example.notes.db.NoteDao;
+import org.example.notes.model.Note;
+
+public class MainController {
+
+    @FXML private TableView<Note> table;
+    @FXML private TextField titleField;
+    @FXML private TextField contentField;
+
+    private final NoteDao dao = new NoteDao();
+
+    @FXML
+    private void initialize() {
+        refresh();
+
+        // При выборе строки — подставляем в поля
+        table.getSelectionModel().selectedItemProperty()
+             .addListener((obs, oldValue, newValue) -> {
+                 if (newValue != null) {
+                     titleField.setText(newValue.title());
+                     contentField.setText(newValue.content());
+                 } else {
+                     titleField.clear();
+                     contentField.clear();
+                 }
+             });
+    }
+
+    void refresh() {
+        table.setItems(FXCollections.observableArrayList(dao.findAll()));
+    }
+
+    // saveNote(), deleteNote() — добавим на следующих этапах
+}
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к MainController.java:}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{JavaFX Controller Lifecycle}}:
+    \begin{itemize}
+        \item Контроллер должен иметь публичный конструктор без параметров (FXMLLoader создает его через Reflection).
+        \item Метод, помеченный \texttt{@FXML private void initialize()}, вызывается автоматически после загрузки FXML и внедрения всех компонентов.
+        \item Это идеальное место для инициализации данных и установки обработчиков событий.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{FXML-аннотации и внедрение зависимостей}}:
+    \begin{itemize}
+        \item \texttt{@FXML private TableView<Note> table} — аннотация указывает FXMLLoader внедрить ссылку на компонент с \texttt{fx:id="table"} из FXML.
+        \item Поля должны быть помечены \texttt{@FXML} и иметь совпадающие имена с \texttt{fx:id} в FXML (или использовать \texttt{fx:id} напрямую).
+        \item Поля обычно объявляются как \texttt{private}, но могут быть \texttt{public} или package-private (FXMLLoader использует Reflection для доступа).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{ObservableList и FXCollections}}:
+    \begin{itemize}
+        \item \texttt{FXCollections.observableArrayList(dao.findAll())} преобразует обычный \texttt{List<Note>} в \texttt{ObservableList<Note>}.
+        \item \texttt{ObservableList} — это специальная коллекция из JavaFX, которая уведомляет UI об изменениях (добавлении, удалении, обновлении элементов).
+        \item \texttt{table.setItems(...)} связывает эту коллекцию с \texttt{TableView}, что позволяет таблице автоматически обновляться при изменении данных.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Слушатели свойств (Property Listeners)}}:
+    \begin{itemize}
+        \item \texttt{table.getSelectionModel().selectedItemProperty()} возвращает \texttt{ObjectProperty<Note>}, которое отслеживает текущую выбранную строку в таблице.
+        \item \texttt{addListener((obs, oldValue, newValue) -> ...)} — добавляет слушатель, который вызывается при изменении выбранного элемента.
+        \item Параметры лямбда-выражения:
+        \begin{itemize}
+            \item \texttt{obs} — наблюдаемое свойство (Observable)
+            \item \texttt{oldValue} — предыдущее значение
+            \item \texttt{newValue} — новое значение
+        \end{itemize}
+        \item Это пример реактивного программирования в JavaFX: интерфейс автоматически реагирует на изменения состояния.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Работа с SelectionModel}}:
+    \begin{itemize}
+        \item \texttt{SelectionModel} управляет выбором элементов в компонентах (таблицы, списки, деревья).
+        \item \texttt{selectedItemProperty()} возвращает свойство, которое содержит текущий выбранный элемент (\texttt{null}, если ничего не выбрано).
+        \item \texttt{clearSelection()} (используется позже) снимает выделение со всех строк.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему refresh() не помечен @FXML?}}:
+    \begin{itemize}
+        \item Метод \texttt{refresh()} вызывается из \texttt{initialize()} и других методов контроллера, но не связан напрямую с событиями FXML.
+        \item \texttt{@FXML} аннотация нужна только для методов, которые вызываются из FXML (через \texttt{onAction}) или для метода \texttt{initialize()}.
+        \item Делая \texttt{refresh()} package-private (без модификатора доступа), мы позволяем вызывать его из других методов контроллера, сохраняя инкапсуляцию.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Инверсия управления (IoC)}}:
+    \begin{itemize}
+        \item \texttt{private final NoteDao dao = new NoteDao()} — простой пример создания зависимостей.
+        \item В реальных приложениях здесь лучше использовать DI-фреймворки (Google Guice, Spring) или фабрики для создания DAO.
+        \item Это облегчает тестирование (можно подменить DAO на mock-объект).
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\section*{Этап 5 — Добавление и редактирование (Create + Update)}
+
+В \texttt{NoteDao.java} добавляем \texttt{insert} и \texttt{update}:
+
+\begin{lstlisting}[style=java]
+    public void insert(Note note) {
+        String sql = "INSERT INTO notes(title, content) VALUES(?, ?)";
+        try (Connection c = Database.connect();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, note.title());
+            ps.setString(2, note.content());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось добавить заметку", e);
+        }
+    }
+
+    public void update(Note note) {
+        String sql = "UPDATE notes SET title = ?, content = ? WHERE id = ?";
+        try (Connection c = Database.connect();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, note.title());
+            ps.setString(2, note.content());
+            ps.setInt(3, note.id());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось обновить заметку", e);
+        }
+    }
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к insert() и update():}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{PreparedStatement вместо Statement}}:
+    \begin{itemize}
+        \item \texttt{PreparedStatement} предпочтительнее обычного \texttt{Statement} по нескольким причинам:
+        \begin{itemize}
+            \item \textbf{Безопасность}: защищает от SQL-инъекций, так как параметры экранируются автоматически
+            \item \textbf{Производительность}: SQL-запрос компилируется один раз и может выполняться многократно с разными параметрами
+            \item \textbf{Читаемость}: четкое разделение SQL-шаблона и значений параметров
+        \end{itemize}
+        \item \texttt{?} в SQL-запросе — это placeholders для параметров.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Параметризованные запросы}}:
+    \begin{itemize}
+        \item \texttt{ps.setString(1, note.title())} — устанавливает значение для первого placeholder (\texttt{?}) как строку.
+        \item Нумерация параметров начинается с 1 (не с 0!).
+        \item \texttt{ps.setInt(3, note.id())} — устанавливает значение для третьего placeholder как целое число.
+        \item Типы данных должны соответствовать типам столбцов в базе данных.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{executeUpdate() vs executeQuery()}}:
+    \begin{itemize}
+        \item \texttt{executeUpdate()} используется для DML-команд (INSERT, UPDATE, DELETE), которые не возвращают результирующий набор.
+        \item Возвращает количество затронутых строк (можно использовать для проверки успешности операции).
+        \item \texttt{executeQuery()} используется для SELECT-запросов и возвращает \texttt{ResultSet}.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Работа с AUTOINCREMENT}}:
+    \begin{itemize}
+        \item В методе \texttt{insert()} мы не указываем значение для поля \texttt{id}, потому что SQLite автоматически генерирует его благодаря \texttt{AUTOINCREMENT}.
+        \item После вставки можно получить сгенерированный ID с помощью \texttt{ps.getGeneratedKeys()}, но в данном приложении это не требуется, так как мы обновляем весь список заметок через \texttt{refresh()}.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему нет возврата сгенерированного ID?}}:
+    \begin{itemize}
+        \item В этом CRUD-приложении после сохранения мы полностью обновляем таблицу через \texttt{dao.findAll()}, поэтому нет необходимости получать только что вставленный ID.
+        \item В более сложных сценариях (например, если нужно продолжить работу с новой записью) можно добавить:
+        \begin{lstlisting}[style=java]
+        try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                return generatedKeys.getInt(1);
+            }
+        }
+        \end{lstlisting}
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+В \texttt{MainController.java} — универсальный метод сохранения:
+
+\begin{lstlisting}[style=java]
+    @FXML
+    private void saveNote() {
+        String title = titleField.getText().trim();
+        String content = contentField.getText().trim();
+
+        if (title.isEmpty() || content.isEmpty()) {
+            showError("Ошибка", "Заголовок и содержание не могут быть пустыми!");
+            return;
+        }
+
+        Note selected = table.getSelectionModel().getSelectedItem();
+
+        try {
+            if (selected != null && selected.id() != 0) {
+                dao.update(new Note(selected.id(), title, content));
+            } else {
+                dao.insert(new Note(title, content));
+            }
+            refresh();
+            table.getSelectionModel().clearSelection();
+            titleField.clear();
+            contentField.clear();
+        } catch (Exception e) {
+            showError("Ошибка сохранения", e.getMessage());
+        }
+    }
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к saveNote():}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Универсальная логика сохранения}}:
+    \begin{itemize}
+        \item Метод определяет, нужно ли создавать новую запись или обновлять существующую, на основе выбранного элемента в таблице.
+        \item \texttt{selected.id() != 0} — проверка, была ли запись уже сохранена в базе (новые записи имеют ID=0).
+        \item Это пример паттерна "единая точка входа" для операций создания/обновления, что упрощает UI и уменьшает дублирование кода.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Валидация ввода}}:
+    \begin{itemize}
+        \item \texttt{trim()} удаляет пробелы в начале и конце строк.
+        \item Проверка на пустые поля выполняется до обращения к базе данных, что улучшает пользовательский опыт.
+        \item \texttt{showError()} — пользовательский метод для отображения диалогов ошибок (будет реализован позже).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Сброс состояния интерфейса}}:
+    \begin{itemize}
+        \item \texttt{refresh()} — обновляет данные в таблице из базы.
+        \item \texttt{table.getSelectionModel().clearSelection()} — снимает выделение со строки.
+        \item \texttt{titleField.clear()} и \texttt{contentField.clear()} — очищают поля ввода.
+        \item Это создает ожидаемое поведение для пользователя после сохранения.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Обработка исключений}}:
+    \begin{itemize}
+        \item \texttt{try-catch} блок перехватывает все исключения, которые могут возникнуть при работе с базой данных.
+        \item \texttt{catch (Exception e)} перехватывает любые исключения, но в продакшене лучше перехватывать конкретные типы (\texttt{SQLException}).
+        \item \texttt{e.getMessage()} извлекает сообщение об ошибке из исключения для отображения пользователю.
+        \item Это предотвращает падение приложения при ошибках БД.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему selected.id() != 0?}}:
+    \begin{itemize}
+        \item Это соглашение, установленное в конструкторе record \texttt{Note(String, String)}, который устанавливает ID=0 для новых записей.
+        \item В реальных приложениях лучше использовать \texttt{Optional<Integer>} или отдельный флаг, но для учебного примера это приемлемо.
+        \item Альтернативный подход — проверять \texttt{selected == null} для создания новой записи, но текущая реализация позволяет редактировать выбранную запись.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Многопоточность в JavaFX}}:
+    \begin{itemize}
+        \item Весь код выполняется в UI-потоке (JavaFX Application Thread), что безопасно для обновления интерфейса.
+        \item Однако длительные операции с базой данных могут блокировать UI. В реальных приложениях такие операции нужно выполнять в фоновых потоках с использованием \texttt{Task} или \texttt{Platform.runLater()} для обновления UI.
+        \item Для учебного примера с SQLite это не критично, так как операции выполняются быстро.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\section*{Этап 6 — Удаление с подтверждением (Delete)}
+
+В \texttt{NoteDao.java}:
+
+\begin{lstlisting}[style=java]
+    public void delete(int id) {
+        String sql = "DELETE FROM notes WHERE id = ?";
+        try (Connection c = Database.connect();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось удалить заметку", e);
+        }
+    }
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к delete():}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Безопасное удаление}}:
+    \begin{itemize}
+        \item Использование \texttt{PreparedStatement} защищает от SQL-инъекций, даже при удалении по ID.
+        \item Условие \texttt{WHERE id = ?} гарантирует, что будет удалена только одна конкретная запись.
+        \item Без условия \texttt{WHERE} команда \texttt{DELETE} удалила бы все записи в таблице!
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Проверка количества затронутых строк}}:
+    \begin{itemize}
+        \item \texttt{ps.executeUpdate()} возвращает количество удаленных строк.
+        \item В продакшен-коде можно добавить проверку:
+        \begin{lstlisting}[style=java]
+        int rowsAffected = ps.executeUpdate();
+        if (rowsAffected == 0) {
+            throw new RuntimeException("Заметка с ID=" + id + " не найдена");
+        }
+        \end{lstlisting}
+        \item Это помогает обнаруживать ситуации, когда запись уже была удалена другим пользователем или процессом.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему не используем CASCADE?}}:
+    \begin{itemize}
+        \item В SQLite можно создавать внешние ключи с каскадным удалением (\texttt{ON DELETE CASCADE}), но в нашем случае таблица \texttt{notes} не имеет связей с другими таблицами.
+        \item Если бы были связи, необходимо было бы предусмотреть каскадное удаление или проверку перед удалением.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+В \texttt{MainController.java}:
+
+\begin{lstlisting}[style=java]
+    @FXML
+    private void deleteNote() {
+        Note selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Подтверждение");
+        alert.setHeaderText(null);
+        alert.setContentText("Удалить заметку «" + selected.title() + "»?");
+
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            try {
+                dao.delete(selected.id());
+                refresh();
+                titleField.clear();
+                contentField.clear();
+            } catch (Exception e) {
+                showError("Ошибка удаления", e.getMessage());
+            }
+        }
+    }
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к deleteNote():}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{JavaFX Alert Dialogs}}:
+    \begin{itemize}
+        \item \texttt{Alert} — стандартный диалоговый компонент JavaFX для отображения сообщений.
+        \item \texttt{Alert.AlertType.CONFIRMATION} — тип диалога с кнопками OK/Cancel.
+        \item \texttt{alert.showAndWait()} показывает диалог и блокирует выполнение до закрытия диалога (модальное окно).
+        \item \texttt{alert.showAndWait().orElse(ButtonType.CANCEL)} обрабатывает случай, когда диалог закрыт без выбора (например, нажатием крестика).
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Безопасное пользовательское взаимодействие}}:
+    \begin{itemize}
+        \item Проверка \texttt{if (selected == null) return} предотвращает попытку удаления без выбранной записи.
+        \item Диалог подтверждения защищает от случайного удаления данных.
+        \item Отображение заголовка заметки в сообщении помогает пользователю подтвердить правильность действия.
+        \item \texttt{alert.setHeaderText(null)} убирает стандартный заголовок диалога для более чистого вида.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Optional API}}:
+    \begin{itemize}
+        \item \texttt{alert.showAndWait()} возвращает \texttt{Optional<ButtonType>}.
+        \item \texttt{orElse(ButtonType.CANCEL)} обеспечивает значение по умолчанию, если \texttt{Optional} пуст (диалог закрыт без выбора).
+        \item Это безопасный способ работы с возможностью отсутствия значения.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему не используем AlertType.WARNING?}}:
+    \begin{itemize}
+        \item \texttt{AlertType.CONFIRMATION} имеет стандартные кнопки OK/Cancel, которые идеально подходят для подтверждения действий.
+        \item \texttt{AlertType.WARNING} обычно используется для предупреждений о потенциальных проблемах, а не для подтверждения действий.
+        \item Стилизация красной кнопки "Удалить" в FXML уже визуально указывает на опасность действия.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Обработка ошибок при удалении}}:
+    \begin{itemize}
+        \item \texttt{try-catch} блок обрабатывает исключения, которые могут возникнуть при удалении (например, нарушение внешних ключей, проблемы с соединением).
+        \item После успешного удаления интерфейс сбрасывается (очистка полей и обновление таблицы).
+        \item Это создает последовательный пользовательский опыт.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+\section*{Этап 8 — Обработка исключений (самый простой и красивый способ)}
+
+Добавляем в \texttt{MainController.java} два удобных метода:
+
+\begin{lstlisting}[style=java]
+    // Показывает красное окно с ошибкой
+    private void showError(String header, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Ошибка");
+        alert.setHeaderText(header);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // Показывает зелёное окно с информацией (можно использовать для успеха)
+    private void showInfo(String header, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Информация");
+        alert.setHeaderText(header);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=gray!10, linewidth=0pt, innerleftmargin=10pt, innerrightmargin=10pt]
+\textbf{Пояснения к showError() и showInfo():}
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{advanced}{\textbf{Централизованная обработка ошибок}}:
+    \begin{itemize}
+        \item Эти методы создают единый стиль отображения ошибок и информационных сообщений по всему приложению.
+        \item \texttt{Alert.AlertType.ERROR} автоматически использует красный цвет и иконку ошибки.
+        \item \texttt{Alert.AlertType.INFORMATION} использует синий цвет и иконку информации.
+        \item Это улучшает пользовательский опыт и делает приложение более профессиональным.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Модальные диалоги}}:
+    \begin{itemize}
+        \item \texttt{alert.showAndWait()} делает диалог модальным — пользователь не может взаимодействовать с основным окном, пока диалог открыт.
+        \item Это гарантирует, что пользователь увидит сообщение об ошибке.
+        \item Возвращаемое значение \texttt{Optional<ButtonType>} не используется в этих методах, так как для ошибок и информации стандартное поведение (закрытие по OK) подходит.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Разделение ответственности}}:
+    \begin{itemize}
+        \item Методы \texttt{showError()} и \texttt{showInfo()} инкапсулируют логику отображения сообщений.
+        \item Это позволяет легко изменить стиль всех сообщений в одном месте.
+        \item В будущем можно добавить логирование ошибок в файл из \texttt{showError()}.
+    \end{itemize}
+    
+    \item \textcolor{explanation}{\textbf{Почему showAndWait(), а не show()?}}:
+    \begin{itemize}
+        \item \texttt{showAndWait()} блокирует выполнение до закрытия диалога, что необходимо для ошибок (пользователь должен увидеть сообщение).
+        \item \texttt{show()} показывает диалог асинхронно, что подходит для информационных сообщений, не требующих немедленного внимания.
+        \item Для ошибок используется \texttt{showAndWait()}, чтобы прервать текущий workflow и заставить пользователя увидеть ошибку.
+    \end{itemize}
+    
+    \item \textcolor{advanced}{\textbf{Пользовательский опыт (UX)}}:
+    \begin{itemize}
+        \item Заголовок (\texttt{header}) и основное сообщение (\texttt{message}) разделены для лучшей читаемости.
+        \item Заголовок обычно краткий и описывает тип проблемы ("Ошибка валидации", "Ошибка базы данных").
+        \item Основное сообщение содержит детали ("Поле 'Заголовок' не может быть пустым").
+        \item Это соответствует лучшим практикам дизайна диалоговых окон.
+    \end{itemize}
+\end{itemize}
+\end{mdframed}
+
+
+
+\end{document}
