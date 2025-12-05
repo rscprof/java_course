@@ -1,0 +1,494 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,12pt]{article}
+
+% Поддержка Unicode и шрифтов для кроссплатформенности
+\usepackage{fontspec}
+\usepackage{polyglossia}
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+
+% Настройки русского языка
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+\defaultfontfeatures{Ligatures=TeX}
+
+% Геометрия страницы
+\usepackage[a4paper, margin=2cm]{geometry}
+
+% Цвета для подсветки кода
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Подсветка синтаксиса для Java
+\usepackage{listings}
+\lstdefinestyle{java}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    framesep=3pt,
+    rulecolor=\color{gray},
+    xleftmargin=10pt,
+    framexleftmargin=10pt,
+    framexrightmargin=5pt,
+    framextopmargin=2pt,
+    framexbottommargin=2pt
+}
+
+\lstset{style=java}
+
+% Заголовки разделов
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Интервалы
+\usepackage{setspace}
+\onehalfspacing
+
+% Гиперссылки
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+% Названия разделов на русском
+\addto\captionsrussian{\renewcommand{\contentsname}{Содержание}}
+\addto\captionsrussian{\renewcommand{\listfigurename}{Список рисунков}}
+\addto\captionsrussian{\renewcommand{\listtablename}{Список таблиц}}
+
+% Метаданные документа
+\title{Современная разработка на Spring Boot: JWT}
+\author{Конспект по разработке веб-приложений}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Этап 1: Модель пользователя и репозиторий}
+
+Создайте модель \texttt{User}, реализующую \texttt{UserDetails}, и репозиторий для неё.
+
+\begin{lstlisting}[language=Java,caption=User.java]
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+@EqualsAndHashCode
+public class User implements UserDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 32)
+    private String username;
+
+    @Column(nullable = false, length = 100)
+    private String passwordHash;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java,caption=UserRepository.java]
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByUsername(String username);
+}
+\end{lstlisting}
+
+\section*{Этап 2: DTO для регистрации и входа}
+
+Создайте DTO-классы для регистрации и входа.
+
+\begin{lstlisting}[language=Java,caption=UserRegistrationDto.java]
+public record UserRegistrationDto(
+    @NotBlank
+    @Size(max=32, message = "Слишком длинная строка")
+    @Size(min=3, message = "Слишком короткая строка")
+    String username,
+
+    @Size(max = 32, message = "Слишком длинный пароль")
+    @Size(min = 8, message = "Слишком короткий пароль")
+    @Pattern(regexp = "(?=.*[A-Za-z]).*\\d.*", message = "Должна быть хотя бы одна буква, хотя бы одна цифра")
+    String password
+) {}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java,caption=AuthRequestDto.java]
+public record AuthRequestDto(
+    @NotBlank
+    @Size(max=32, message = "Слишком длинная строка")
+    @Size(min=3, message = "Слишком короткая строка")
+    String username,
+
+    @Size(max = 32, message = "Слишком длинный пароль")
+    @Size(min = 8, message = "Слишком короткий пароль")
+    @Pattern(regexp = "(?=.*[A-Za-z]).*\\d.*", message = "Должна быть хотя бы одна буква, хотя бы одна цифра")
+    String password
+) {}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java,caption=TokenResponseDto.java]
+public record TokenResponseDto(String token) {}
+\end{lstlisting}
+
+\section*{Этап 3: Контроллер аутентификации}
+
+Добавьте контроллер \texttt{AuthController} с методами регистрации и входа.
+
+\begin{lstlisting}[language=Java,caption=AuthController.java]
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+
+    @PostMapping("/register")
+    public ResponseEntity<Void> registerUser(@RequestBody @Valid UserRegistrationDto dto) {
+        var user = User.builder()
+            .username(dto.username())
+            .passwordHash(passwordEncoder.encode(dto.password()))
+            .build();
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponseDto> login(@RequestBody AuthRequestDto request) {
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.username(), request.password())
+        );
+        String token = jwtUtil.generateAccessToken(request.username());
+        return ResponseEntity.ok(new TokenResponseDto(token));
+    }
+}
+\end{lstlisting}
+
+\section*{Этап 4: Настройка безопасности (без JWT-фильтра)}
+
+На этом этапе включите Spring Security и настройте базовую безопасность без токенов (только логин/пароль в памяти или через \texttt{UserDetailsService}).
+
+Добавьте в \texttt{build.gradle.kts}:
+
+\begin{verbatim}
+implementation("org.springframework.boot:spring-boot-starter-security")
+\end{verbatim}
+
+Создайте конфигурацию безопасности:
+
+\begin{lstlisting}[language=Java,caption=SecurityConfig.java — базовая версия]
+@Configuration
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final PasswordEncoder passwordEncoder;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(exc -> exc.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
+}
+\end{lstlisting}
+
+Создайте точку входа при ошибке аутентификации:
+
+\begin{lstlisting}[language=Java,caption=JwtAuthenticationEntryPoint.java]
+@Component
+public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+}
+\end{lstlisting}
+
+Теперь у вас должна работать регистрация и вход (проверьте через Postman).
+
+\section*{Этап 5: JWT-утилиты и сервис пользователей}
+
+Создайте утилиту для работы с JWT:
+
+\begin{lstlisting}[language=Java,caption=JwtUtil.java]
+@Component
+public class JwtUtil {
+
+    @Value("${jwt.access.expiration}") private Long accessExpiration;
+    @Value("${jwt.access.password}") private String secret;
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    public String getUsername(String token) {
+        try {
+            var claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+            var expiration = claims.getExpiration();
+            if (!expiration.before(new Date())) {
+                return claims.getSubject();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    public String generateAccessToken(String subject) {
+        return Jwts.builder()
+            .subject(subject)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + accessExpiration))
+            .signWith(getSigningKey())
+            .compact();
+    }
+}
+\end{lstlisting}
+
+Создайте сервис загрузки пользователя:
+
+\begin{lstlisting}[language=Java,caption=CustomUserDetailsService.java]
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+    }
+}
+\end{lstlisting}
+
+\section*{Этап 6: JWT-фильтр}
+
+Добавьте фильтр, который извлекает токен из заголовка и устанавливает контекст аутентификации:
+
+\begin{lstlisting}[language=Java,caption=JwtRequestFilter.java]
+@Component
+@RequiredArgsConstructor
+public class JwtRequestFilter extends OncePerRequestFilter {
+
+    private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+
+        if (!request.getRequestURI().startsWith("/api/auth/")) {
+            String header = request.getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                String jwt = header.substring(7);
+                String username = jwtUtil.getUsername(jwt);
+                if (username != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+\end{lstlisting}
+
+Добавьте фильтр в \texttt{SecurityConfig}:
+
+\begin{lstlisting}[language=Java,caption=SecurityConfig.java — обновлённая версия]
+private final JwtRequestFilter jwtRequestFilter;
+
+// ...
+
+http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+\end{lstlisting}
+
+\section*{Этап 7: Обновление зависимостей}
+
+Добавьте в \texttt{build.gradle.kts} все JWT-зависимости и Resilience4j:
+
+\begin{verbatim}
+implementation("org.springframework.boot:spring-boot-starter-security")
+implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+\end{verbatim}
+
+\section*{Этап 8: Привязка заметок к пользователю}
+
+Измените модель \texttt{Note}:
+
+\begin{lstlisting}[language=Java,caption=Note.java]
+@ManyToOne
+@JoinColumn(name = "user_id", nullable = false)
+private User user;
+\end{lstlisting}
+
+Обновите репозиторий:
+
+\begin{lstlisting}[language=Java,caption=NoteRepository.java]
+List<Note> findByUser(User user);
+\end{lstlisting}
+
+Создайте DTO для заметок:
+
+\begin{lstlisting}[language=Java,caption=NoteDto.java]
+public record NoteDto(Long id, String title, String content) {}
+\end{lstlisting}
+
+Измените \texttt{NoteController}: замените маппинг на \texttt{/api/notes} и добавьте получение пользователя из \texttt{SecurityContextHolder}:
+
+\begin{lstlisting}[language=Java,caption=NoteController.java — ключевые фрагменты]
+var auth = SecurityContextHolder.getContext().getAuthentication();
+var user = (User) auth.getPrincipal();
+
+// в createNote:
+note.setUser(user);
+
+// в getAllNotes:
+return noteRepository.findByUser(user).stream()
+    .map(note -> new NoteDto(note.getId(), note.getTitle(), note.getContent()))
+    .toList();
+
+
+    @PutMapping("/{id}")
+    public ResponseEntity<NoteDto> updateNote(@PathVariable Long id,
+            @RequestBody @Valid NoteCreateDto noteCreateDto) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        var user = (User)auth.getPrincipal();
+
+        Optional<Note> res = noteRepository.findById(id);
+        res = res.flatMap(note -> (note.getUser().equals(user))?Optional.of(note):Optional.empty());
+
+        return res.map(existingNote -> {
+            existingNote.setTitle(noteCreateDto.title());
+            existingNote.setContent(noteCreateDto.content());
+            var updatedNote = noteRepository.save(existingNote);
+
+            return ResponseEntity.ok(new NoteDto(updatedNote.getId(),updatedNote.getTitle(),updatedNote.getContent()));
+        }).orElseGet(()->ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNote(@PathVariable Long id) {
+        ResponseEntity<Void> response ;
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        var user = (User)auth.getPrincipal();
+
+        var res = noteRepository.findById(id);
+        res = res.flatMap(note -> (note.getUser().equals(user))?Optional.of(note):Optional.empty());
+
+        if (res.isPresent()) {
+            noteRepository.deleteById(id);
+            response = ResponseEntity.noContent().build();
+        } else {
+            response = ResponseEntity.notFound().build();
+        }
+        return response;
+
+    }
+
+\end{lstlisting}
+
+\section*{Этап 9: Настройка application.properties}
+
+Добавьте в \texttt{application.properties}:
+
+\begin{verbatim}
+jwt.access.expiration=3600000
+jwt.access.password=CnwyutT5nP424AS7jg5rJteZYJuY5f5rAsHUXuRJ
+logging.level.org.springframework.security=DEBUG
+\end{verbatim}
+
+\end{document}
