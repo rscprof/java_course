@@ -1,0 +1,1671 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,12pt]{article}
+
+% Поддержка Unicode и шрифтов для кроссплатформенности
+\usepackage{fontspec}
+\usepackage{polyglossia}
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+
+% Настройки русского языка
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+\defaultfontfeatures{Ligatures=TeX}
+
+% Геометрия страницы
+\usepackage[a4paper, margin=2cm]{geometry}
+
+% Цвета для подсветки кода
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{magenta}{rgb}{0.7,0,0.7}
+
+% Подсветка синтаксиса для Java
+\usepackage{listings}
+\lstdefinestyle{java}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    framesep=3pt,
+    rulecolor=\color{gray},
+    xleftmargin=10pt,
+    framexleftmargin=10pt,
+    framexrightmargin=5pt,
+    framextopmargin=2pt,
+    framexbottommargin=2pt
+}
+
+\lstset{style=java}
+
+\definecolor{delim}{RGB}{20,105,176}
+\definecolor{numb}{RGB}{106, 109, 32}
+\definecolor{string}{rgb}{0.64,0.08,0.08}
+
+\lstdefinelanguage{json}{
+    numbers=left,
+    numberstyle=\small,
+    frame=single,
+    rulecolor=\color{black},
+    showspaces=false,
+    showtabs=false,
+    breaklines=true,
+    postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{gray}\hookrightarrow\space}},
+    breakatwhitespace=true,
+    basicstyle=\ttfamily\small,
+    upquote=true,
+    morestring=[b]",
+    stringstyle=\color{string},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+
+% Заголовки разделов
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% Интервалы
+\usepackage{setspace}
+\onehalfspacing
+
+% Гиперссылки
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+% Названия разделов на русском
+\addto\captionsrussian{\renewcommand{\contentsname}{Содержание}}
+\addto\captionsrussian{\renewcommand{\listfigurename}{Список рисунков}}
+\addto\captionsrussian{\renewcommand{\listtablename}{Список таблиц}}
+
+% Метаданные документа
+\title{Работа с JWT-аутентификацией и REST API в JavaFX приложениях}
+\author{Руководство по интеграции}
+\date{\today}
+
+% Команда для вставки ссылок на код
+\newcommand{\code}[1]{\texttt{#1}}
+
+% Команда для выделения важных терминов
+\newcommand{\term}[1]{\textbf{#1}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    Данный документ подробно описывает процесс интеграции JWT-аутентификации и работы с REST API в JavaFX приложениях. Рассматриваются современные подходы с использованием встроенного Java HttpClient, библиотек для работы с JSON, безопасного хранения токенов и архитектурных паттернов для построения надежных клиентских приложений.
+\end{abstract}
+
+\tableofcontents
+
+\section{Введение}
+
+В современных десктопных приложениях часто требуется взаимодействие с веб-сервисами через REST API с использованием JWT-аутентификации. JavaFX предоставляет мощные инструменты для создания пользовательского интерфейса, но для работы с внешними API необходимо использовать дополнительные библиотеки и паттерны проектирования.
+
+Данный документ фокусируется именно на аспектах работы с REST API и JWT-аутентификацией, считая знание JavaFX и многопоточности базовым. Будут рассмотрены все ключевые компоненты для создания надежного, безопасного и поддерживаемого решения.
+
+\section{Библиотеки для работы с REST API}
+
+\subsection{Java HttpClient (java.net.http)}
+
+\term{Java HttpClient} --- это встроенный в Java 11+ HTTP-клиент, который заменяет устаревшие \code{HttpURLConnection} и сторонние библиотеки. Он предоставляет современный, асинхронный API для выполнения HTTP-запросов.
+
+\subsubsection{Ключевые компоненты Java HttpClient}
+
+Вот как создается базовый HTTP-клиент с основными настройками:
+
+\begin{lstlisting}[language=Java,caption=Базовый HttpClient с настройками]
+HttpClient httpClient = HttpClient.newBuilder()
+    .version(HttpClient.Version.HTTP_1_1)  // Версия HTTP протокола
+    .connectTimeout(Duration.ofSeconds(10))  // Таймаут подключения
+    .followRedirects(HttpClient.Redirect.NORMAL)  // Автоматическое следование редиректам
+    .sslContext(SSLContext.getDefault())  // SSL контекст для HTTPS
+    .executor(Executors.newFixedThreadPool(5))  // Пул потоков для асинхронных запросов
+    .build();
+\end{lstlisting}
+
+\subsubsection{HttpRequest и HttpResponse}
+
+\term{HttpRequest} представляет собой HTTP-запрос, а \term{HttpResponse} --- ответ от сервера. Вот пример синхронного GET-запроса:
+
+\begin{lstlisting}[language=Java,caption=Синхронный GET-запрос]
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/data"))
+    .header("Accept", "application/json")  // Ожидаемый формат ответа
+    .header("User-Agent", "JavaFX-Client/1.0")
+    .GET()  // Метод запроса
+    .build();
+
+HttpResponse<String> response = httpClient.send(
+    request, 
+    HttpResponse.BodyHandlers.ofString()  // Обработчик тела ответа
+);
+
+// Работа с результатом
+int statusCode = response.statusCode();
+String responseBody = response.body();
+HttpHeaders headers = response.headers();
+\end{lstlisting}
+
+Асинхронный вариант запроса с использованием CompletableFuture:
+
+\begin{lstlisting}[language=Java,caption=Асинхронный GET-запрос]
+CompletableFuture<HttpResponse<String>> futureResponse = 
+    httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+
+futureResponse.thenApply(response -> {
+    if (response.statusCode() == 200) {
+        return processResponse(response.body());
+    } else {
+        throw new RuntimeException("Request failed with status: " + response.statusCode());
+    }
+}).exceptionally(ex -> {
+    handleError(ex);
+    return null;
+});
+\end{lstlisting}
+
+\subsubsection{BodyPublishers и BodyHandlers}
+
+\term{BodyPublishers} отвечают за отправку тела запроса, а \term{BodyHandlers} --- за обработку тела ответа.
+
+\textbf{BodyPublishers:}
+\begin{itemize}
+    \item \code{ofString()} --- отправка строки (JSON, XML, plain text)
+    \item \code{ofFile()} --- отправка файла
+    \item \code{ofInputStream()} --- отправка потока данных
+    \item \code{noBody()} --- пустое тело (для GET запросов)
+    \item \code{ofByteArray()} --- отправка байтового массива
+\end{itemize}
+
+\textbf{BodyHandlers:}
+\begin{itemize}
+    \item \code{ofString()} --- преобразование в строку
+    \item \code{ofFile()} --- сохранение в файл
+    \item \code{ofInputStream()} --- возврат InputStream для ручной обработки
+    \item \code{discard()} --- игнорирование тела ответа
+    \item \code{ofByteArray()} --- получение байтового массива
+\end{itemize}
+
+Пример POST-запроса с JSON-телом:
+
+\begin{lstlisting}[language=Java,caption=POST-запрос с JSON]
+String jsonBody = "{\"username\":\"john\",\"password\":\"secret\"}";
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/auth/login"))
+    .header("Content-Type", "application/json")
+    .header("Accept", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))  // Отправка JSON
+    .build();
+
+HttpResponse<String> response = httpClient.send(
+    request,
+    HttpResponse.BodyHandlers.ofString()
+);
+\end{lstlisting}
+
+\subsection{JSON библиотеки: Gson vs Jackson}
+
+Для работы с JSON в JavaFX приложениях обычно используются две основные библиотеки: \term{Gson} (от Google) и \term{Jackson}. Обе имеют свои преимущества.
+
+\subsubsection{Gson (Google)}
+
+Gson прост в использовании и не требует аннотаций для базовых операций. Добавление в проект:
+
+\begin{verbatim}
+implementation 'com.google.code.gson:gson:2.8.9'
+\end{verbatim}
+
+Основные возможности Gson:
+
+\begin{lstlisting}[language=Java,caption=Работа с Gson]
+Gson gson = new Gson();
+
+// Сериализация объекта в JSON
+User user = new User("john_doe", "john@example.com");
+String json = gson.toJson(user);  
+// Результат: {"username":"john_doe","email":"john@example.com"}
+
+// Десериализация JSON в объект
+String responseJson = "{\"access_token\":\"eyJhbGci...\",\"expires_in\":3600}";
+AuthToken token = gson.fromJson(responseJson, AuthToken.class);
+
+// Работа с JsonObject (без создания классов)
+JsonObject jsonObject = JsonParser.parseString(responseJson).getAsJsonObject();
+String accessToken = jsonObject.get("access_token").getAsString();
+int expiresIn = jsonObject.get("expires_in").getAsInt();
+
+// Настройка Gson с параметрами
+Gson customGson = new GsonBuilder()
+    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+    .setPrettyPrinting()
+    .excludeFieldsWithoutExposeAnnotation()
+    .create();
+\end{lstlisting}
+
+\subsubsection{Jackson (более производительный)}
+
+Jackson обеспечивает лучшую производительность и больше возможностей для настройки. Добавление в проект:
+
+\begin{verbatim}
+implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
+implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0' // Для работы с датами
+\end{verbatim}
+
+Основные возможности Jackson:
+
+\begin{lstlisting}[language=Java,caption=Работа с Jackson]
+ObjectMapper objectMapper = new ObjectMapper();
+// Настройка для работы с Java 8 датами
+objectMapper.registerModule(new JavaTimeModule());
+// Отключение проверки неизвестных полей
+objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+// Настройка формата дат
+objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+
+// Сериализация/десериализация
+String json = objectMapper.writeValueAsString(user);
+User user = objectMapper.readValue(json, User.class);
+
+// Чтение конкретных полей без создания классов
+JsonNode rootNode = objectMapper.readTree(responseJson);
+String accessToken = rootNode.path("access_token").asText();
+int expiresIn = rootNode.path("expires_in").asInt();
+
+// Преобразование JsonNode в объект
+User user = objectMapper.treeToValue(rootNode.path("user"), User.class);
+\end{lstlisting}
+
+\textbf{Сравнение Gson и Jackson:}
+\begin{itemize}
+    \item \textbf{Gson}: Проще в освоении, меньше boilerplate кода, хорош для базовых задач
+    \item \textbf{Jackson}: Выше производительность, больше возможностей настройки, лучше подходит для сложных сценариев
+    \item Для большинства JavaFX приложений с REST API подойдет Gson из-за простоты использования
+\end{itemize}
+
+\section{JWT-аутентификация: глубокое погружение}
+
+\subsection{Что такое JWT (JSON Web Token)}
+
+\term{JWT (JSON Web Token)} --- это открытый стандарт (RFC 7519) для создания токенов доступа, которые содержат некоторое количество "claims" (утверждений). JWT состоит из трех частей, разделенных точками:
+
+\begin{enumerate}
+    \item \textbf{Header} (заголовок): Алгоритм подписи и тип токена
+    \item \textbf{Payload} (полезная нагрузка): Claims (утверждения)
+    \item \textbf{Signature} (подпись): Обеспечивает целостность токена
+\end{enumerate}
+
+Формат токена: \code{header.payload.signature}
+
+Пример JWT:
+\begin{verbatim}
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+\end{verbatim}
+
+\subsubsection{Структура Header}
+
+Header обычно содержит два поля:
+\begin{itemize}
+    \item \code{alg} --- алгоритм подписи (HS256, RS256 и т.д.)
+    \item \code{typ} --- тип токена (обычно "JWT")
+\end{itemize}
+
+Пример header в формате JSON:
+\begin{lstlisting}[language=JSON,caption=Header JWT]
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+\end{lstlisting}
+
+\subsubsection{Структура Payload}
+
+Payload содержит claims --- утверждения о сущности (обычно пользователе) и дополнительные данные. Claims делятся на три типа:
+
+\begin{enumerate}
+    \item \textbf{Registered claims} --- стандартные поля (рекомендуемые, но не обязательные):
+    \begin{itemize}
+        \item \code{iss} (issuer) --- издатель токена
+        \item \code{sub} (subject) --- субъект токена (обычно ID пользователя)
+        \item \code{aud} (audience) --- получатель токена
+        \item \code{exp} (expiration time) --- время истечения срока действия
+        \item \code{nbf} (not before) --- время, до которого токен не действителен
+        \item \code{iat} (issued at) --- время выдачи токена
+        \item \code{jti} (JWT ID) --- уникальный идентификатор токена
+    \end{itemize}
+    
+    \item \textbf{Public claims} --- общедоступные имена, зарегистрированные в IANA JSON Web Token Registry
+    
+    \item \textbf{Private claims} --- кастомные поля, согласованные между сторонами
+\end{enumerate}
+
+Пример payload:
+\begin{lstlisting}[language=JSON,caption=Payload JWT]
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "username": "johndoe",
+  "roles": ["user", "admin"],
+  "iat": 1516239022,
+  "exp": 1516242622
+}
+\end{lstlisting}
+
+\subsubsection{Signature}
+
+Подпись создается путем хеширования закодированных header и payload с использованием секретного ключа. Для алгоритма HS256:
+
+\begin{verbatim}
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+  secret_key
+)
+\end{verbatim}
+
+\subsection{Структура классов для работы с JWT}
+
+Для работы с JWT в JavaFX приложении необходимо создать соответствующие классы для представления токенов и claims.
+
+\subsubsection{Класс AuthToken}
+
+Представляет ответ сервера при аутентификации:
+
+\begin{lstlisting}[language=Java,caption=AuthToken.java]
+public class AuthToken {
+    private String access_token;    // JWT токен доступа
+    private String token_type;      // Тип токена (обычно "Bearer")
+    private int expires_in;         // Время жизни в секундах
+    private String refresh_token;   // Токен для обновления (опционально)
+    private String scope;           // Область доступа (опционально)
+    
+    // Геттеры и сеттеры
+    public String getAccessToken() { return access_token; }
+    public String getTokenType() { return token_type; }
+    public int getExpiresIn() { return expires_in; }
+    public String getRefreshToken() { return refresh_token; }
+    
+    // Метод для получения времени истечения
+    public LocalDateTime getExpiryTime() {
+        return LocalDateTime.now().plusSeconds(expires_in);
+    }
+    
+    // Метод для проверки, истек ли токен
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(getExpiryTime());
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Класс JwtClaims}
+
+Представляет декодированные claims из JWT:
+
+\begin{lstlisting}[language=Java,caption=JwtClaims.java]
+public class JwtClaims {
+    private String sub;           // Subject (ID пользователя)
+    private String username;      // Имя пользователя
+    private List<String> roles;   // Роли пользователя
+    private Long iat;            // Issued At (время выдачи в секундах)
+    private Long exp;            // Expiration Time (время истечения в секундах)
+    private String iss;          // Issuer (издатель)
+    private List<String> aud;    // Audience (получатели)
+    
+    // Геттеры и сеттеры
+    
+    // Методы для работы со временем
+    public boolean isExpired() {
+        return System.currentTimeMillis() / 1000 > exp;
+    }
+    
+    public Duration getRemainingTime() {
+        long remaining = exp - (System.currentTimeMillis() / 1000);
+        return Duration.ofSeconds(Math.max(0, remaining));
+    }
+    
+    public boolean isNotBefore() {
+        return System.currentTimeMillis() / 1000 >= iat;
+    }
+    
+    public boolean hasRole(String role) {
+        return roles != null && roles.contains(role);
+    }
+}
+\end{lstlisting}
+
+\subsection{Процесс аутентификации с сервером}
+
+Процесс аутентификации включает несколько этапов: отправка учетных данных, получение токена, его декодирование и использование для последующих запросов.
+
+\subsubsection{Шаг 1: Отправка учетных данных}
+
+Отправка логина и пароля на сервер для получения JWT:
+
+\begin{lstlisting}[language=Java,caption=Метод аутентификации]
+public AuthToken authenticate(String username, String password) throws IOException, InterruptedException {
+    String authUrl = BASE_URL + "/auth/login";
+    
+    // Создание JSON для аутентификации
+    JsonObject authRequest = new JsonObject();
+    authRequest.addProperty("username", username);
+    authRequest.addProperty("password", password);
+    
+    // Формирование HTTP запроса
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(authUrl))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .header("User-Agent", "JavaFX-Client/1.0")
+        .POST(HttpRequest.BodyPublishers.ofString(authRequest.toString()))
+        .build();
+    
+    // Отправка запроса
+    HttpResponse<String> response = httpClient.send(
+        request, 
+        HttpResponse.BodyHandlers.ofString()
+    );
+    
+    // Обработка ответа
+    if (response.statusCode() == 200) {
+        // Успешная аутентификация
+        return gson.fromJson(response.body(), AuthToken.class);
+    } else {
+        // Обработка ошибок
+        throw new AuthenticationException(
+            "Authentication failed with status: " + response.statusCode() + 
+            ", response: " + response.body()
+        );
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Шаг 2: Декодирование JWT (опционально)}
+
+Хотя для базовой аутентификации декодирование JWT на клиенте не обязательно, оно может быть полезно для проверки срока действия и получения информации о пользователе:
+
+\begin{lstlisting}[language=Java,caption=Декодирование JWT]
+public JwtClaims decodeJwtToken(String token) {
+    try {
+        // Разделение токена на части
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Invalid JWT format. Expected 3 parts, got " + parts.length);
+        }
+        
+        // Декодирование payload (вторая часть)
+        // Base64 URL декодирование (без padding и с заменой символов)
+        String payloadJson = new String(
+            Base64.getUrlDecoder().decode(parts[1]), 
+            StandardCharsets.UTF_8
+        );
+        
+        // Парсинг claims
+        return gson.fromJson(payloadJson, JwtClaims.class);
+        
+    } catch (JsonSyntaxException e) {
+        throw new SecurityException("Failed to parse JWT payload", e);
+    } catch (Exception e) {
+        throw new SecurityException("Failed to decode JWT token", e);
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Шаг 3: Добавление токена в заголовки}
+
+Для защищенных запросов необходимо добавлять JWT в заголовок Authorization:
+
+\begin{lstlisting}[language=Java,caption=Добавление заголовка аутентификации]
+private HttpRequest.Builder addAuthHeader(HttpRequest.Builder requestBuilder) {
+    if (authToken != null && !authToken.getAccessToken().isEmpty()) {
+        // Проверка срока действия токена
+        if (authToken.isExpired()) {
+            // Попытка обновить токен перед запросом
+            if (!refreshToken()) {
+                throw new AuthenticationException("Session expired. Please login again.");
+            }
+        }
+        
+        // Формат заголовка: "Bearer <token>"
+        String authHeader = authToken.getTokenType() + " " + authToken.getAccessToken();
+        requestBuilder.header("Authorization", authHeader);
+    }
+    return requestBuilder;
+}
+
+// Использование при создании запроса
+HttpRequest request = addAuthHeader(HttpRequest.newBuilder()
+    .uri(URI.create(BASE_URL + "/api/protected/data"))
+    .header("Accept", "application/json")
+    .GET())
+    .build();
+\end{lstlisting}
+
+\subsection{Обработка refreshToken}
+
+Для обеспечения непрерывной работы приложения необходимо реализовать механизм обновления токена:
+
+\begin{lstlisting}[language=Java,caption=Обновление токена]
+public boolean refreshToken() throws IOException, InterruptedException {
+    // Проверка наличия refresh token
+    if (authToken == null || authToken.getRefreshToken() == null || authToken.getRefreshToken().isEmpty()) {
+        return false;
+    }
+    
+    String refreshUrl = BASE_URL + "/auth/refresh";
+    
+    JsonObject refreshRequest = new JsonObject();
+    refreshRequest.addProperty("refresh_token", authToken.getRefreshToken());
+    
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(refreshUrl))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(refreshRequest.toString()))
+        .build();
+    
+    HttpResponse<String> response = httpClient.send(
+        request, 
+        HttpResponse.BodyHandlers.ofString()
+    );
+    
+    if (response.statusCode() == 200) {
+        try {
+            // Обновляем токен
+            AuthToken newToken = gson.fromJson(response.body(), AuthToken.class);
+            this.authToken = newToken;
+            // Сохраняем обновленный токен в хранилище
+            tokenStorage.saveToken(authToken);
+            return true;
+        } catch (JsonSyntaxException e) {
+            throw new ApiException("Invalid refresh token response format", e);
+        }
+    } else if (response.statusCode() == 401 || response.statusCode() == 403) {
+        // Refresh token недействителен - очищаем текущую сессию
+        logout();
+        throw new AuthenticationException("Session expired. Please login again.");
+    } else {
+        throw new ApiException("Failed to refresh token: " + response.statusCode() + 
+                              ", response: " + response.body());
+    }
+}
+\end{lstlisting}
+
+\section{Интеграция REST API и JWT в архитектуре приложения}
+
+\subsection{Паттерн Repository для работы с API}
+
+Паттерн Repository абстрагирует работу с API и обеспечивает разделение ответственности:
+
+\begin{lstlisting}[language=Java,caption=UserRepository.java]
+public interface UserRepository {
+    User getCurrentUser() throws ApiException;
+    List<User> getAllUsers() throws ApiException;
+    User updateUser(User user) throws ApiException;
+    void deleteUser(Long userId) throws ApiException;
+}
+
+public class UserRepositoryImpl implements UserRepository {
+    private final ApiClient apiClient;
+    private final Gson gson;
+    
+    @Override
+    public User getCurrentUser() throws ApiException {
+        try {
+            String url = "/users/me";
+            HttpResponse<String> response = apiClient.get(url);
+            
+            if (response.statusCode() == 200) {
+                return gson.fromJson(response.body(), User.class);
+            } else {
+                apiClient.handleApiError(response);
+                return null; // Не достигнет этой точки из-за исключения
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new ApiException("Network error while getting current user", e);
+        }
+    }
+    
+    @Override
+    public List<User> getAllUsers() throws ApiException {
+        try {
+            HttpResponse<String> response = apiClient.get("/users");
+            if (response.statusCode() == 200) {
+                return gson.fromJson(response.body(), new TypeToken<List<User>>(){}.getType());
+            } else {
+                apiClient.handleApiError(response);
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new ApiException("Network error while getting users", e);
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{ApiClient: центральный класс для работы с API}
+
+\term{ApiClient} --- это центральный класс, инкапсулирующий всю логику работы с REST API и JWT-аутентификацией.
+
+\begin{lstlisting}[language=Java,caption=ApiClient.java - базовая версия]
+public class ApiClient {
+    public static final String BASE_URL = "https://api.example.com/v1";
+    
+    private final HttpClient httpClient;
+    private final Gson gson;
+    private AuthToken authToken;
+    private final TokenStorage tokenStorage;
+    
+    public ApiClient() {
+        this.httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(30))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+        
+        this.gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
+            .create();
+        
+        this.tokenStorage = new SecureTokenStorage();
+        // Загружаем сохраненный токен при старте
+        loadTokenFromStorage();
+    }
+    
+    private void loadTokenFromStorage() {
+        try {
+            this.authToken = tokenStorage.loadToken();
+        } catch (Exception e) {
+            // Логируем ошибку, но не прерываем работу
+            System.err.println("Failed to load stored token: " + e.getMessage());
+        }
+    }
+    
+    private HttpRequest.Builder addAuthHeader(HttpRequest.Builder requestBuilder) {
+        if (authToken != null && !authToken.getAccessToken().isEmpty()) {
+            if (authToken.isExpired()) {
+                refreshToken();
+            }
+            requestBuilder.header("Authorization", 
+                authToken.getTokenType() + " " + authToken.getAccessToken());
+        }
+        return requestBuilder;
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Универсальные методы для HTTP запросов}
+
+ApiClient должен предоставлять универсальные методы для всех типов HTTP запросов:
+
+\begin{lstlisting}[language=Java,caption=ApiClient.java - методы запросов]
+// Универсальный метод GET с аутентификацией
+public HttpResponse<String> get(String endpoint) throws IOException, InterruptedException {
+    HttpRequest request = addAuthHeader(HttpRequest.newBuilder()
+        .uri(URI.create(BASE_URL + endpoint))
+        .header("Accept", "application/json")
+        .GET())
+        .build();
+    
+    return sendRequestWithRetry(request);
+}
+
+// Универсальный метод POST с аутентификацией
+public <T> HttpResponse<String> post(String endpoint, T requestBody) throws IOException, InterruptedException {
+    String jsonBody = gson.toJson(requestBody);
+    
+    HttpRequest request = addAuthHeader(HttpRequest.newBuilder()
+        .uri(URI.create(BASE_URL + endpoint))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(jsonBody)))
+        .build();
+    
+    return sendRequestWithRetry(request);
+}
+
+// Универсальный метод PUT с аутентификацией
+public <T> HttpResponse<String> put(String endpoint, T requestBody) throws IOException, InterruptedException {
+    String jsonBody = gson.toJson(requestBody);
+    
+    HttpRequest request = addAuthHeader(HttpRequest.newBuilder()
+        .uri(URI.create(BASE_URL + endpoint))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .PUT(HttpRequest.BodyPublishers.ofString(jsonBody)))
+        .build();
+    
+    return sendRequestWithRetry(request);
+}
+
+// Универсальный метод DELETE с аутентификацией
+public HttpResponse<String> delete(String endpoint) throws IOException, InterruptedException {
+    HttpRequest request = addAuthHeader(HttpRequest.newBuilder()
+        .uri(URI.create(BASE_URL + endpoint))
+        .header("Accept", "application/json")
+        .DELETE())
+        .build();
+    
+    return sendRequestWithRetry(request);
+}
+\end{lstlisting}
+
+\subsubsection{Механизм повторных попыток}
+
+Для обработки истекших токенов реализуется механизм повторных попыток:
+
+\begin{lstlisting}[language=Java,caption=ApiClient.java - повторные попытки]
+private HttpResponse<String> sendRequestWithRetry(HttpRequest request) throws IOException, InterruptedException {
+    int maxRetries = 2;
+    int retryCount = 0;
+    
+    while (retryCount <= maxRetries) {
+        HttpResponse<String> response = httpClient.send(
+            request, 
+            HttpResponse.BodyHandlers.ofString()
+        );
+        
+        // Успешный запрос или ошибка, не связанная с аутентификацией
+        if (response.statusCode() < 400 || response.statusCode() != 401) {
+            return response;
+        }
+        
+        // Обработка ошибки 401 (Unauthorized)
+        if (retryCount < maxRetries && authToken != null) {
+            try {
+                // Пытаемся обновить токен
+                if (refreshToken()) {
+                    // Создаем новый запрос с обновленным токеном
+                    request = addAuthHeader(HttpRequest.newBuilder(request.uri())
+                        .method(request.method(), request.bodyPublisher().orElse(null))
+                        .headers(request.headers().map()))
+                        .build();
+                    retryCount++;
+                    continue; // Повторяем запрос
+                }
+            } catch (AuthenticationException e) {
+                // Refresh token недействителен - выходим из цикла
+                throw e;
+            }
+        }
+        
+        // Если не удалось обновить токен или достигнуто максимальное количество попыток
+        handleApiError(response);
+        return response; // Этот код не будет достигнут из-за исключения в handleApiError
+    }
+    
+    throw new ApiException("Max retries exceeded for request to " + request.uri());
+}
+\end{lstlisting}
+
+\subsubsection{Обработка ошибок API}
+
+Для централизованной обработки ошибок API создается специальный метод:
+
+\begin{lstlisting}[language=Java,caption=ApiClient.java - обработка ошибок]
+public void handleApiError(HttpResponse<String> response) throws ApiException {
+    int statusCode = response.statusCode();
+    String responseBody = response.body();
+    String errorMessage = "API Error " + statusCode;
+    
+    try {
+        // Пытаемся распарсить ошибку как JSON
+        JsonObject errorJson = JsonParser.parseString(responseBody).getAsJsonObject();
+        if (errorJson.has("message")) {
+            errorMessage = errorJson.get("message").getAsString();
+        } else if (errorJson.has("error")) {
+            JsonObject errorObj = errorJson.getAsJsonObject("error");
+            if (errorObj.has("message")) {
+                errorMessage = errorObj.get("message").getAsString();
+            }
+        }
+    } catch (Exception e) {
+        // Если не удалось распарсить JSON, используем тело ответа
+        errorMessage = responseBody.substring(0, Math.min(200, responseBody.length()));
+    }
+    
+    // Специфическая обработка для разных кодов ошибок
+    switch (statusCode) {
+        case 400:
+            throw new BadRequestException("Bad Request: " + errorMessage, statusCode);
+        case 401:
+            // Очищаем токен при ошибке 401
+            logout();
+            throw new AuthenticationException("Unauthorized: " + errorMessage, statusCode);
+        case 403:
+            throw new PermissionException("Forbidden: " + errorMessage, statusCode);
+        case 404:
+            throw new ResourceNotFoundException("Resource not found: " + errorMessage, statusCode);
+        case 409:
+            throw new ConflictException("Conflict: " + errorMessage, statusCode);
+        case 429:
+            throw new RateLimitException("Too Many Requests: " + errorMessage, statusCode);
+        case 500:
+            throw new ServerException("Internal server error: " + errorMessage, statusCode);
+        case 503:
+            throw new ServiceUnavailableException("Service unavailable: " + errorMessage, statusCode);
+        default:
+            if (statusCode >= 400) {
+                throw new ApiException(errorMessage, statusCode);
+            }
+    }
+}
+\end{lstlisting}
+
+\subsection{Кастомные исключения для API}
+
+Для лучшей обработки ошибок создаются иерархия кастомных исключений:
+
+\begin{lstlisting}[language=Java,caption=ApiException.java]
+public class ApiException extends Exception {
+    private final int statusCode;
+    private final String responseBody;
+    
+    public ApiException(String message) {
+        this(message, 0, null);
+    }
+    
+    public ApiException(String message, Throwable cause) {
+        this(message, 0, null, cause);
+    }
+    
+    public ApiException(String message, int statusCode) {
+        this(message, statusCode, null);
+    }
+    
+    public ApiException(String message, int statusCode, String responseBody) {
+        this(message, statusCode, responseBody, null);
+    }
+    
+    public ApiException(String message, int statusCode, String responseBody, Throwable cause) {
+        super(message, cause);
+        this.statusCode = statusCode;
+        this.responseBody = responseBody;
+    }
+    
+    public int getStatusCode() {
+        return statusCode;
+    }
+    
+    public String getResponseBody() {
+        return responseBody;
+    }
+}
+
+// Специфические исключения
+public class AuthenticationException extends ApiException {
+    public AuthenticationException(String message, int statusCode) {
+        super(message, statusCode);
+    }
+}
+
+public class PermissionException extends ApiException {
+    public PermissionException(String message, int statusCode) {
+        super(message, statusCode);
+    }
+}
+
+public class ResourceNotFoundException extends ApiException {
+    public ResourceNotFoundException(String message, int statusCode) {
+        super(message, statusCode);
+    }
+}
+
+public class BadRequestException extends ApiException {
+    public BadRequestException(String message, int statusCode) {
+        super(message, statusCode);
+    }
+}
+\end{lstlisting}
+
+\section{Безопасность и лучшие практики}
+
+\subsection{Безопасное хранение токенов}
+
+Хранение JWT-токенов в памяти приложения небезопасно. Необходимо реализовать безопасное хранилище:
+
+\begin{lstlisting}[language=Java,caption=SecureTokenStorage.java]
+public class SecureTokenStorage implements TokenStorage {
+    private static final String PREFS_NODE = "com/example/app/auth";
+    private static final String ENCRYPTION_KEY_ALIAS = "JWT_ENCRYPTION_KEY";
+    
+    private final KeyStore keyStore;
+    private final Preferences prefs;
+    
+    public SecureTokenStorage() throws Exception {
+        this.prefs = Preferences.userNodeForPackage(SecureTokenStorage.class);
+        
+        // Инициализация KeyStore для хранения ключей шифрования
+        this.keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        File keyStoreFile = new File(System.getProperty("user.home"), ".app_keystore");
+        
+        if (keyStoreFile.exists()) {
+            try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
+                keyStore.load(fis, "keystore_password".toCharArray());
+            }
+        } else {
+            keyStore.load(null, "keystore_password".toCharArray());
+            // Генерация и сохранение ключа шифрования
+            generateAndStoreEncryptionKey();
+            try (FileOutputStream fos = new FileOutputStream(keyStoreFile)) {
+                keyStore.store(fos, "keystore_password".toCharArray());
+            }
+        }
+    }
+    
+    private void generateAndStoreEncryptionKey() throws Exception {
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(256); // 256-bit AES key
+        SecretKey secretKey = keyGen.generateKey();
+        
+        KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
+        KeyStore.ProtectionParameter protectionParameter = 
+            new KeyStore.PasswordProtection("key_password".toCharArray());
+        
+        keyStore.setEntry(ENCRYPTION_KEY_ALIAS, secretKeyEntry, protectionParameter);
+    }
+    
+    private SecretKey getEncryptionKey() throws Exception {
+        KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry) 
+            keyStore.getEntry(ENCRYPTION_KEY_ALIAS, 
+                new KeyStore.PasswordProtection("key_password".toCharArray()));
+        return secretKeyEntry.getSecretKey();
+    }
+    
+    @Override
+    public void saveToken(AuthToken token) throws Exception {
+        String tokenJson = new Gson().toJson(token);
+        String encryptedToken = encrypt(tokenJson, getEncryptionKey());
+        
+        prefs.put("encrypted_token", encryptedToken);
+        prefs.putLong("token_expiry", token.getExpiryTime().atZone(ZoneId.systemDefault()).toEpochSecond());
+    }
+    
+    @Override
+    public AuthToken loadToken() throws Exception {
+        String encryptedToken = prefs.get("encrypted_token", null);
+        long expiryTime = prefs.getLong("token_expiry", 0);
+        
+        if (encryptedToken == null || System.currentTimeMillis() / 1000 > expiryTime) {
+            return null; // Токен отсутствует или истек
+        }
+        
+        String decryptedToken = decrypt(encryptedToken, getEncryptionKey());
+        return new Gson().fromJson(decryptedToken, AuthToken.class);
+    }
+    
+    private String encrypt(String plainText, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        byte[] iv = new byte[12]; // 96-bit IV for GCM
+        new SecureRandom().nextBytes(iv);
+        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+        
+        cipher.init(Cipher.ENCRYPT_MODE, key, spec);
+        byte[] cipherText = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+        
+        // Объединяем IV и зашифрованный текст
+        byte[] combined = new byte[iv.length + cipherText.length];
+        System.arraycopy(iv, 0, combined, 0, iv.length);
+        System.arraycopy(cipherText, 0, combined, iv.length, cipherText.length);
+        
+        return Base64.getEncoder().encodeToString(combined);
+    }
+    
+    private String decrypt(String encryptedText, SecretKey key) throws Exception {
+        byte[] combined = Base64.getDecoder().decode(encryptedText);
+        byte[] iv = new byte[12];
+        byte[] cipherText = new byte[combined.length - 12];
+        
+        System.arraycopy(combined, 0, iv, 0, iv.length);
+        System.arraycopy(combined, 12, cipherText, 0, cipherText.length);
+        
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+        cipher.init(Cipher.DECRYPT_MODE, key, spec);
+        
+        byte[] plainText = cipher.doFinal(cipherText);
+        return new String(plainText, StandardCharsets.UTF_8);
+    }
+}
+\end{lstlisting}
+
+\subsection{Валидация ответов сервера}
+
+Для обеспечения безопасности и надежности необходимо валидировать ответы сервера:
+
+\begin{lstlisting}[language=Java,caption=ApiResponseValidator.java]
+public class ApiResponseValidator {
+    
+    private static final Gson gson = new Gson();
+    private static final int MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB
+    
+    // Валидация структуры JSON ответа
+    public static <T> T validateAndParse(String jsonResponse, Class<T> clazz) throws ApiException {
+        if (jsonResponse == null || jsonResponse.isEmpty()) {
+            throw new ApiException("Empty response received");
+        }
+        
+        // Проверка размера ответа
+        if (jsonResponse.length() > MAX_RESPONSE_SIZE) {
+            throw new ApiException("Response size exceeds maximum limit of " + MAX_RESPONSE_SIZE + " bytes");
+        }
+        
+        try {
+            JsonElement jsonElement = JsonParser.parseString(jsonResponse);
+            
+            if (!jsonElement.isJsonObject()) {
+                throw new ApiException("Invalid response format: expected JSON object, got " + 
+                                      jsonElement.getClass().getSimpleName());
+            }
+            
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            
+            // Проверка на наличие ошибки в ответе
+            if (jsonObject.has("error") || jsonObject.has("errors")) {
+                String errorMessage = extractErrorMessage(jsonObject);
+                throw new ApiException("API Error: " + errorMessage);
+            }
+            
+            // Проверка обязательных полей для специфических типов
+            if (clazz == AuthToken.class) {
+                validateAuthTokenResponse(jsonObject);
+            }
+            
+            return gson.fromJson(jsonElement, clazz);
+            
+        } catch (JsonSyntaxException e) {
+            throw new ApiException("Invalid JSON format in response: " + e.getMessage(), e);
+        } catch (JsonParseException e) {
+            throw new ApiException("JSON parsing error: " + e.getMessage(), e);
+        }
+    }
+    
+    private static String extractErrorMessage(JsonObject jsonObject) {
+        if (jsonObject.has("message")) {
+            return jsonObject.get("message").getAsString();
+        } else if (jsonObject.has("error")) {
+            JsonElement error = jsonObject.get("error");
+            if (error.isJsonObject() && error.getAsJsonObject().has("message")) {
+                return error.getAsJsonObject().get("message").getAsString();
+            } else if (error.isJsonPrimitive()) {
+                return error.getAsString();
+            }
+        }
+        return "Unknown error";
+    }
+    
+    private static void validateAuthTokenResponse(JsonObject jsonObject) throws ApiException {
+        if (!jsonObject.has("access_token")) {
+            throw new ApiException("Invalid authentication response: missing 'access_token' field");
+        }
+        
+        if (!jsonObject.has("expires_in")) {
+            throw new ApiException("Invalid authentication response: missing 'expires_in' field");
+        }
+        
+        if (jsonObject.get("access_token").getAsString().isEmpty()) {
+            throw new ApiException("Invalid authentication response: 'access_token' is empty");
+        }
+        
+        try {
+            int expiresInSeconds = jsonObject.get("expires_in").getAsInt();
+            if (expiresInSeconds <= 0) {
+                throw new ApiException("Invalid authentication response: 'expires_in' must be positive");
+            }
+        } catch (NumberFormatException e) {
+            throw new ApiException("Invalid authentication response: 'expires_in' must be a number");
+        }
+    }
+    
+    // Валидация HTTP заголовков
+    public static void validateResponseHeaders(HttpResponse<String> response) throws ApiException {
+        HttpHeaders headers = response.headers();
+        
+        // Проверка Content-Type
+        Optional<String> contentType = headers.firstValue("Content-Type");
+        if (contentType.isPresent()) {
+            String ct = contentType.get().toLowerCase();
+            if (!ct.contains("application/json")) {
+                throw new ApiException("Unexpected content type: " + ct + ". Expected application/json");
+            }
+        }
+        
+        // Проверка Content-Length
+        Optional<String> contentLength = headers.firstValue("Content-Length");
+        if (contentLength.isPresent()) {
+            try {
+                long length = Long.parseLong(contentLength.get());
+                if (length > MAX_RESPONSE_SIZE) {
+                    throw new ApiException("Response size exceeds maximum limit: " + length + " bytes");
+                }
+            } catch (NumberFormatException e) {
+                // Не критично, если не можем распарсить Content-Length
+            }
+        }
+        
+        // Проверка CORS заголовков для безопасности
+        if (!headers.map().containsKey("Access-Control-Allow-Origin")) {
+            System.err.println("Warning: Missing CORS headers in response from " + 
+                              response.uri().toString());
+        }
+    }
+}
+\end{lstlisting}
+
+\section{Продвинутые техники}
+
+\subsection{Интерцепторы для логирования и отладки}
+
+Интерцепторы позволяют добавлять дополнительную логику перед отправкой запросов и после получения ответов:
+
+\begin{lstlisting}[language=Java,caption=ApiInterceptor.java]
+public class ApiInterceptor {
+    
+    private static final Logger logger = Logger.getLogger(ApiInterceptor.class.getName());
+    private static final boolean DEBUG_ENABLED = true;
+    
+    public static void logRequest(HttpRequest request) {
+        if (!DEBUG_ENABLED) return;
+        
+        StringBuilder log = new StringBuilder();
+        log.append("=== API REQUEST ===\n");
+        log.append("Method: ").append(request.method()).append("\n");
+        log.append("URL: ").append(request.uri()).append("\n");
+        
+        // Логирование заголовков (без чувствительных данных)
+        request.headers().map().forEach((key, values) -> {
+            String lowerKey = key.toLowerCase();
+            if (!lowerKey.contains("authorization") && 
+                !lowerKey.contains("token") && 
+                !lowerKey.contains("password")) {
+                log.append(key).append(": ").append(String.join(", ", values)).append("\n");
+            } else {
+                log.append(key).append(": ***** (hidden)\n");
+            }
+        });
+        
+        // Логирование тела запроса для небольших запросов
+        if (request.bodyPublisher().isPresent() && request.method().equals("POST")) {
+            try {
+                HttpRequest.BodyPublisher bodyPublisher = request.bodyPublisher().get();
+                if (bodyPublisher.contentLength().orElse(0L) < 1000) {
+                    // Для логирования тела запроса потребуется дополнительная реализация
+                    log.append("Body: [REDACTED FOR SECURITY]\n");
+                } else {
+                    log.append("Body: [LARGE REQUEST BODY - SKIPPED]\n");
+                }
+            } catch (Exception e) {
+                log.append("Body: [ERROR LOGGING BODY: ").append(e.getMessage()).append("]\n");
+            }
+        }
+        
+        logger.info(log.toString());
+    }
+    
+    public static void logResponse(HttpResponse<String> response) {
+        if (!DEBUG_ENABLED) return;
+        
+        StringBuilder log = new StringBuilder();
+        log.append("=== API RESPONSE ===\n");
+        log.append("Status Code: ").append(response.statusCode()).append("\n");
+        
+        // Логирование заголовков
+        response.headers().map().forEach((key, values) -> {
+            log.append(key).append(": ").append(String.join(", ", values)).append("\n");
+        });
+        
+        // Логирование тела ответа для отладки (только для небольших ответов)
+        String responseBody = response.body();
+        if (responseBody != null && responseBody.length() < 1000) {
+            log.append("Response Body: ").append(responseBody).append("\n");
+        } else if (responseBody != null) {
+            log.append("Response Body: [LARGE RESPONSE - SKIPPED, length=").append(responseBody.length()).append("]\n");
+        }
+        
+        // Подсветка ошибок
+        if (response.statusCode() >= 400) {
+            logger.severe(log.toString());
+        } else {
+            logger.info(log.toString());
+        }
+    }
+    
+    // Использование в ApiClient
+    public <T> HttpResponse<String> executeWithInterceptors(
+        HttpRequest request, 
+        HttpResponse.BodyHandler<T> responseBodyHandler
+    ) throws IOException, InterruptedException {
+        // Логирование запроса
+        logRequest(request);
+        
+        // Отправка запроса
+        HttpResponse<T> response = httpClient.send(request, responseBodyHandler);
+        
+        // Логирование ответа
+        if (response.body() instanceof String) {
+            @SuppressWarnings("unchecked")
+            HttpResponse<String> stringResponse = (HttpResponse<String>) response;
+            logResponse(stringResponse);
+        } else {
+            logger.info("Response received with status: " + response.statusCode());
+        }
+        
+        return (HttpResponse<String>) response;
+    }
+}
+\end{lstlisting}
+
+\subsection{Кэширование ответов}
+
+Кэширование уменьшает количество запросов к серверу и улучшает производительность:
+
+\begin{lstlisting}[language=Java,caption=ApiCache.java]
+public class ApiCache {
+    private final Map<String, CachedResponse> cache = new ConcurrentHashMap<>();
+    private final Duration defaultTtl = Duration.ofMinutes(5);
+    private final ScheduledExecutorService cleanupExecutor;
+    
+    public ApiCache() {
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+        // Запуск периодической очистки кэша
+        cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredEntries, 1, 1, TimeUnit.MINUTES);
+    }
+    
+    public static class CachedResponse {
+        private final String responseBody;
+        private final long timestamp;
+        private final Duration ttl;
+        private final boolean isPrivate; // Личные данные пользователя
+        
+        public CachedResponse(String responseBody, Duration ttl, boolean isPrivate) {
+            this.responseBody = responseBody;
+            this.timestamp = System.currentTimeMillis();
+            this.ttl = ttl;
+            this.isPrivate = isPrivate;
+        }
+        
+        public boolean isExpired() {
+            return Duration.ofMillis(System.currentTimeMillis() - timestamp).compareTo(ttl) > 0;
+        }
+        
+        public String getResponse() {
+            return responseBody;
+        }
+        
+        public boolean isPrivate() {
+            return isPrivate;
+        }
+    }
+    
+    public void cacheResponse(String cacheKey, String responseBody, Duration ttl, boolean isPrivate) {
+        cache.put(cacheKey, new CachedResponse(responseBody, ttl, isPrivate));
+    }
+    
+    public String getCachedResponse(String cacheKey) {
+        CachedResponse cached = cache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            return cached.getResponse();
+        }
+        return null;
+    }
+    
+    public void invalidateCache(String cacheKey) {
+        cache.remove(cacheKey);
+    }
+    
+    public void invalidateUserCache(String userId) {
+        // Инвалидация всех кэшированных данных, связанных с пользователем
+        cache.keySet().removeIf(key -> key.startsWith("user:" + userId + ":"));
+    }
+    
+    public void invalidateAllPrivateData() {
+        // Инвалидация всех приватных данных при выходе пользователя
+        cache.keySet().removeIf(key -> {
+            CachedResponse response = cache.get(key);
+            return response != null && response.isPrivate();
+        });
+    }
+    
+    private void cleanupExpiredEntries() {
+        cache.keySet().removeIf(key -> {
+            CachedResponse response = cache.get(key);
+            return response != null && response.isExpired();
+        });
+    }
+    
+    public void shutdown() {
+        cleanupExecutor.shutdown();
+        try {
+            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            cleanupExecutor.shutdownNow();
+        }
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Использование кэша в репозитории}
+
+\begin{lstlisting}[language=Java,caption=Кэширование в репозитории]
+public class UserRepositoryImpl implements UserRepository {
+    private final ApiClient apiClient;
+    private final ApiCache apiCache;
+    private final Gson gson;
+    
+    @Override
+    public User getCurrentUser() throws ApiException {
+        String cacheKey = "user:current:" + apiClient.getCurrentUserId();
+        String cachedResponse = apiCache.getCachedResponse(cacheKey);
+        
+        if (cachedResponse != null) {
+            logger.info("Using cached response for current user");
+            return gson.fromJson(cachedResponse, User.class);
+        }
+        
+        try {
+            HttpResponse<String> response = apiClient.get("/users/me");
+            if (response.statusCode() == 200) {
+                User user = gson.fromJson(response.body(), User.class);
+                // Кэшируем на 1 минуту (данные пользователя могут часто меняться)
+                apiCache.cacheResponse(cacheKey, response.body(), Duration.ofMinutes(1), true);
+                return user;
+            } else {
+                apiClient.handleApiError(response);
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new ApiException("Network error", e);
+        }
+    }
+    
+    @Override
+    public List<User> getAllUsers() throws ApiException {
+        String cacheKey = "users:list";
+        String cachedResponse = apiCache.getCachedResponse(cacheKey);
+        
+        if (cachedResponse != null) {
+            logger.info("Using cached response for all users");
+            return gson.fromJson(cachedResponse, new TypeToken<List<User>>(){}.getType());
+        }
+        
+        try {
+            HttpResponse<String> response = apiClient.get("/users");
+            if (response.statusCode() == 200) {
+                List<User> users = gson.fromJson(response.body(), new TypeToken<List<User>>(){}.getType());
+                // Кэшируем на 10 минут (публичные данные)
+                apiCache.cacheResponse(cacheKey, response.body(), Duration.ofMinutes(10), false);
+                return users;
+            } else {
+                apiClient.handleApiError(response);
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new ApiException("Network error", e);
+        }
+    }
+    
+    @Override
+    public void logout() {
+        apiCache.invalidateAllPrivateData();
+    }
+}
+\end{lstlisting}
+
+\section{Тестирование API клиента}
+
+Тестирование критически важно для обеспечения надежности интеграции с API. Рассмотрим основные подходы.
+
+\subsection{Unit-тесты с MockWebServer}
+
+\term{MockWebServer} от Square позволяет эмулировать HTTP-сервер для тестирования:
+
+\begin{lstlisting}[language=Java,caption=ApiClientTest.java]
+public class ApiClientTest {
+    
+    private MockWebServer mockServer;
+    private ApiClient apiClient;
+    
+    @BeforeEach
+    void setUp() throws IOException {
+        mockServer = new MockWebServer();
+        mockServer.start();
+        
+        apiClient = new ApiClient();
+        // Устанавливаем базовый URL для тестов
+        apiClient.setBaseUrl("http://localhost:" + mockServer.getPort());
+    }
+    
+    @AfterEach
+    void tearDown() throws IOException {
+        mockServer.shutdown();
+    }
+    
+    @Test
+    void testSuccessfulAuthentication() throws Exception {
+        // Подготовка мок-ответа
+        String mockResponse = "{\"access_token\":\"mock_jwt_token\",\"expires_in\":3600,\"token_type\":\"Bearer\"}";
+        mockServer.enqueue(new MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(mockResponse));
+        
+        // Выполнение теста
+        AuthToken token = apiClient.authenticate("test_user", "test_password");
+        
+        // Проверки
+        assertNotNull(token);
+        assertEquals("mock_jwt_token", token.getAccessToken());
+        assertEquals(3600, token.getExpiresIn());
+        assertEquals("Bearer", token.getTokenType());
+        
+        // Проверка отправленного запроса
+        RecordedRequest request = mockServer.takeRequest();
+        assertEquals("POST", request.getMethod());
+        assertEquals("/auth/login", request.getPath());
+        
+        // Проверка заголовков
+        assertEquals("application/json", request.getHeader("Content-Type"));
+        assertEquals("application/json", request.getHeader("Accept"));
+        
+        // Проверка тела запроса
+        JsonObject requestBody = JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject();
+        assertEquals("test_user", requestBody.get("username").getAsString());
+        assertEquals("test_password", requestBody.get("password").getAsString());
+    }
+    
+    @Test
+    void testAuthenticationFailure() throws Exception {
+        // Мок-ответ с ошибкой
+        String mockError = "{\"error\":\"invalid_credentials\",\"message\":\"Invalid username or password\"}";
+        mockServer.enqueue(new MockResponse()
+            .setResponseCode(401)
+            .setHeader("Content-Type", "application/json")
+            .setBody(mockError));
+        
+        // Проверка исключения
+        AuthenticationException exception = assertThrows(
+            AuthenticationException.class,
+            () -> apiClient.authenticate("invalid", "wrong_password")
+        );
+        
+        assertTrue(exception.getMessage().contains("Unauthorized"));
+        assertTrue(exception.getMessage().contains("Invalid username or password"));
+    }
+    
+    @Test
+    void testTokenRefresh() throws Exception {
+        // Настройка начального токена
+        AuthToken initialToken = new AuthToken();
+        initialToken.setAccessToken("old_token");
+        initialToken.setRefreshToken("refresh_token");
+        initialToken.setExpiresIn(-1); // Истекший токен
+        apiClient.setAuthToken(initialToken);
+        
+        // Мок-ответ для обновления токена
+        String refreshTokenResponse = "{\"access_token\":\"new_token\",\"expires_in\":3600}";
+        mockServer.enqueue(new MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(refreshTokenResponse));
+        
+        // Выполнение обновления
+        boolean success = apiClient.refreshToken();
+        
+        assertTrue(success);
+        AuthToken newToken = apiClient.getAuthToken();
+        assertEquals("new_token", newToken.getAccessToken());
+        assertEquals(3600, newToken.getExpiresIn());
+        
+        // Проверка запроса на обновление
+        RecordedRequest request = mockServer.takeRequest();
+        assertEquals("POST", request.getMethod());
+        assertEquals("/auth/refresh", request.getPath());
+        
+        JsonObject requestBody = JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject();
+        assertEquals("refresh_token", requestBody.get("refresh_token").getAsString());
+    }
+    
+    @Test
+    void testProtectedEndpointWithAuth() throws Exception {
+        // Установка действительного токена
+        AuthToken validToken = new AuthToken();
+        validToken.setAccessToken("valid_token");
+        validToken.setExpiresIn(3600);
+        apiClient.setAuthToken(validToken);
+        
+        // Мок-ответ для защищенного эндпоинта
+        String protectedResponse = "{\"id\":1,\"username\":\"test_user\",\"email\":\"test@example.com\"}";
+        mockServer.enqueue(new MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(protectedResponse));
+        
+        // Выполнение защищенного запроса
+        HttpResponse<String> response = apiClient.get("/users/me");
+        
+        assertEquals(200, response.statusCode());
+        assertEquals(protectedResponse, response.body());
+        
+        // Проверка заголовка Authorization
+        RecordedRequest request = mockServer.takeRequest();
+        assertEquals("Bearer valid_token", request.getHeader("Authorization"));
+    }
+}
+\end{lstlisting}
+
+\subsection{Интеграционные тесты с реальным API}
+
+Для интеграционных тестов можно использовать реальный тестовый API:
+
+\begin{lstlisting}[language=Java,caption=IntegrationTest.java]
+@Test
+@EnabledIfEnvironmentVariable(named = "RUN_INTEGRATION_TESTS", matches = "true")
+void testRealApiIntegration() throws Exception {
+    ApiClient client = new ApiClient();
+    client.setBaseUrl("https://api.example.com/v1");
+    
+    // Тестовые учетные данные (должны быть в безопасном месте)
+    String testUser = "integration_test_user";
+    String testPassword = System.getenv("TEST_API_PASSWORD");
+    
+    // Шаг 1: Аутентификация
+    AuthToken token = client.authenticate(testUser, testPassword);
+    assertNotNull(token);
+    assertFalse(token.getAccessToken().isEmpty());
+    
+    // Шаг 2: Получение данных пользователя
+    HttpResponse<String> response = client.get("/users/me");
+    assertEquals(200, response.statusCode());
+    
+    JsonObject userJson = JsonParser.parseString(response.body()).getAsJsonObject();
+    assertEquals(testUser, userJson.get("username").getAsString());
+    
+    // Шаг 3: Создание тестовой записи
+    JsonObject newNote = new JsonObject();
+    newNote.addProperty("title", "Test Note");
+    newNote.addProperty("content", "Integration test content");
+    
+    HttpResponse<String> createResponse = client.post("/notes", newNote.toString());
+    assertEquals(201, createResponse.statusCode());
+    
+    JsonObject createdNote = JsonParser.parseString(createResponse.body()).getAsJsonObject();
+    assertEquals("Test Note", createdNote.get("title").getAsString());
+    assertNotNull(createdNote.get("id"));
+    
+    // Шаг 4: Удаление тестовой записи
+    Long noteId = createdNote.get("id").getAsLong();
+    HttpResponse<String> deleteResponse = client.delete("/notes/" + noteId);
+    assertEquals(204, deleteResponse.statusCode());
+}
+\end{lstlisting}
+
+\section{Заключение}
+
+Интеграция JWT-аутентификации и REST API в JavaFX приложениях требует тщательного подхода к архитектуре, безопасности и обработке ошибок. Ключевые моменты, которые следует учитывать:
+
+\begin{itemize}
+    \item \textbf{Выбор HTTP клиента}: Java HttpClient предоставляет современный, стандартный API для работы с REST
+    
+    \item \textbf{Безопасность}: JWT-токены должны храниться безопасно, с использованием шифрования и безопасных механизмов хранения
+    
+    \item \textbf{Архитектура}: Паттерн Repository и централизованный ApiClient обеспечивают поддерживаемость кода
+    
+    \item \textbf{Обработка ошибок}: Кастомные исключения и централизованная обработка ошибок API упрощают отладку и улучшают UX
+    
+    \item \textbf{Производительность}: Кэширование ответов и механизмы повторных попыток улучшают производительность и надежность
+    
+    \item \textbf{Тестирование}: Unit-тесты с MockWebServer и интеграционные тесты обеспечивают качество кода
+\end{itemize}
+
+Следование этим принципам позволяет создавать надежные, безопасные и поддерживаемые JavaFX приложения, эффективно взаимодействующие с REST API через JWT-аутентификацию.
+
+\end{document}
