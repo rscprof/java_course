@@ -1,0 +1,695 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,12pt]{article}
+
+% Поддержка Unicode и шрифтов для кроссплатформенности
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{amsmath}
+
+% Основные шрифты (кроссплатформенные)
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Для polyglossia кириллица
+\newfontfamily\cyrillicfont{DejaVu Serif}
+\newfontfamily\cyrillicfontsf{DejaVu Sans}
+\newfontfamily\cyrillicfonttt{DejaVu Sans Mono}
+
+% Настройки русского языка
+\setdefaultlanguage{russian}
+\setotherlanguages{english}
+\defaultfontfeatures{Ligatures=TeX}
+
+% Геометрия страницы
+\usepackage[a4paper, margin=2cm]{geometry}
+
+% Цвета для подсветки кода
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Подсветка синтаксиса для Java и YAML
+\usepackage{listings}
+\lstdefinestyle{java}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    framesep=3pt,
+    rulecolor=\color{gray},
+    xleftmargin=10pt,
+    framexleftmargin=10pt,
+    framexrightmargin=5pt,
+    framextopmargin=2pt,
+    framexbottommargin=2pt
+}
+
+\lstdefinestyle{yaml}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    framesep=3pt,
+    rulecolor=\color{gray},
+    xleftmargin=10pt
+}
+
+\lstset{style=java}
+
+% Заголовки разделов
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Интервалы
+\usepackage{setspace}
+\onehalfspacing
+
+% Гиперссылки
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+% Названия разделов на русском
+\addto\captionsrussian{\renewcommand{\contentsname}{Содержание}}
+\addto\captionsrussian{\renewcommand{\listfigurename}{Список рисунков}}
+\addto\captionsrussian{\renewcommand{\listtablename}{Список таблиц}}
+\addto\captionsrussian{\renewcommand{\lstlistingname}{Листинг}}
+
+% Метаданные документа
+\title{Интеграция Apache Kafka в Spring Boot:\\Практическое руководство с KRaft и Docker}
+\author{Конспект по разработке распределённых систем}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Введение}
+Данная лекция посвящена интеграции Apache Kafka в существующее Spring Boot-приложение для отработки навыков работы с event-driven архитектурой. 
+
+\textbf{Ключевые особенности подхода:}
+\begin{enumerate}
+    \item \textbf{Kafka 4.1+ в режиме KRaft} — без ZooKeeper, с нативным консенсусом на базе Raft
+    \item \textbf{Spring Kafka 4.0.x} — официальная поддержка современных версий Kafka
+    \item \textbf{Ручная реализация} продюсера и консьюмера с использованием Spring Kafka (без высокоуровневых абстракций)
+    \item \textbf{Логирование в файл} на чистом Java I/O в консьюмере (для отладки и обучения)
+    \item \textbf{Docker Compose} для развёртывания Kafka и Spring Boot в контейнерах
+    \item \textbf{IntelliJ IDEA} как среда разработки с настройками для работы с контейнерами
+\end{enumerate}
+
+\section{Архитектура решения}
+\begin{figure}[h]
+\centering
+\fbox{\parbox{0.9\textwidth}{
+\centering
+\textbf{Схема взаимодействия:}\\[1em]
+Spring Boot App $\xrightarrow{\text{KafkaTemplate}}$ Kafka Broker (KRaft) $\xrightarrow{\text{@KafkaListener}}$ File Logger\\[1em]
+\textit{Все компоненты работают в Docker-контейнерах}
+}}
+\caption{Архитектура интеграции Kafka}
+\end{figure}
+
+\section{Настройка Docker Compose для Kafka в режиме KRaft}
+Начиная с версии 4.0, Apache Kafka полностью перешёл на режим KRaft, исключив зависимость от ZooKeeper. Для локальной разработки используем \texttt{bitnami/kafka:latest} или \texttt{apache/kafka:latest}.
+
+\subsection{docker-compose.yml}
+\begin{lstlisting}[style=yaml,caption=Docker Compose для Kafka (KRaft mode)]
+version: '3.8'
+
+services:
+  kafka:
+    image: 'bitnami/kafka:latest'  # или 'apache/kafka:4.1.0'
+    container_name: kafka-broker
+    ports:
+      - '9092:9092'   # для внутренних подключений (из других контейнеров)
+      - '9094:9094'   # для внешних подключений (с хоста, IntelliJ IDEA)
+    environment:
+      # KRaft: режим процесса (контроллер + брокер для dev)
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      # Настройка listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # Кворум контроллеров (для KRaft)
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # Для dev-среды: один реплика-фактор
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+      # Разрешить plaintext (только для разработки!)
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      # Логирование
+      - KAFKA_CFG_LOG4J_LOGGERS=kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Инициализация топиков при старте
+  init-kafka:
+    image: 'bitnami/kafka:latest'
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command: |
+      "
+      echo 'Ожидание доступности Kafka...'
+      until kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1; do
+        sleep 2
+      done
+      echo 'Создание топиков...'
+      kafka-topics.sh --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic note-events \
+        --replication-factor 1 --partitions 3
+      kafka-topics.sh --bootstrap-server kafka:9092 \
+        --create --if-not-exists \
+        --topic audit-log \
+        --replication-factor 1 --partitions 1
+      echo 'Топики созданы:'
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      "
+
+  # Spring Boot приложение (собирается отдельно, см. раздел 4)
+  spring-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notes-api
+    ports:
+      - '8080:8080'
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  kafka_data:
+\end{lstlisting}
+
+\textbf{Важные замечания по конфигурации:}
+\begin{enumerate}
+    \item \texttt{KAFKA\_CFG\_PROCESS\_ROLES=controller,broker} — комбинированный режим для разработки; в production рекомендуется разделять роли
+    \item \texttt{EXTERNAL} listener на порту 9094 позволяет подключаться к брокеру с хоста (например, из IntelliJ IDEA для отладки)
+    \item \texttt{healthcheck} использует \texttt{kafka-broker-api-versions.sh} для надёжной проверки готовности брокера
+    \item Для продакшена замените \texttt{ALLOW\_PLAINTEXT\_LISTENER=yes} на SSL/SASL аутентификацию
+\end{enumerate}
+
+\section{Настройка Spring Boot приложения}
+\subsection{Зависимости (build.gradle.kts)}
+\begin{lstlisting}[language=Java,caption=Добавление Spring Kafka]
+plugins {
+    id("org.springframework.boot") version "3.3.5"
+    id("io.spring.dependency-management") version "1.1.6"
+    kotlin("jvm") version "1.9.25" // опционально
+    kotlin("plugin.spring") version "1.9.25"
+}
+
+dependencies {
+    // Существующие зависимости...
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    
+    // Kafka integration
+    implementation("org.springframework.kafka:spring-kafka:4.0.5") // актуальная версия
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    
+    // Lombok, validation и т.д.
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+}
+\end{lstlisting}
+
+\subsection{Конфигурация application-docker.properties}
+\begin{lstlisting}[style=java,caption=Настройки Kafka для Docker-среды]
+# Kafka configuration
+spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+spring.kafka.consumer.group-id=notes-service-group
+spring.kafka.consumer.auto-offset-reset=earliest
+spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
+spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
+spring.kafka.consumer.properties.spring.json.trusted.packages=com.example.demo.model,com.example.demo.dto
+
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
+
+# Topic names
+kafka.topic.note-events=note-events
+kafka.topic.audit-log=audit-log
+
+# Logging for Kafka (опционально, для отладки)
+logging.level.org.apache.kafka=INFO
+logging.level.org.springframework.kafka=WARN
+\end{lstlisting}
+
+\section{Ручная реализация Kafka Producer}
+Используем \texttt{KafkaTemplate} из Spring Kafka, но реализуем логику отправки вручную (без @EventListener и т.п.).
+
+\subsection{NoteEvent DTO}
+\begin{lstlisting}[language=Java,caption=Событие для отправки в Kafka]
+package com.example.demo.dto.kafka;
+
+import lombok.*;
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class NoteEvent {
+    private String eventId;          // UUID для идемпотентности
+    private Long noteId;
+    private String action;           // "CREATED", "UPDATED", "DELETED"
+    private String title;
+    private Instant timestamp;
+    private Long userId;         
+}
+\end{lstlisting}
+
+\subsection{KafkaProducerService}
+\begin{lstlisting}[language=Java,caption=Сервис отправки событий]
+package com.example.demo.service.kafka;
+
+import com.example.demo.dto.kafka.NoteEvent;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class KafkaProducerService {
+
+    private final KafkaTemplate<String, NoteEvent> kafkaTemplate;
+    private final String topicName; // inject from properties
+
+    /**
+     * Отправка события с обработкой результата (синхронно для простоты)
+     * В production рекомендуется использовать асинхронный подход с колбэками
+     */
+    public boolean sendNoteEvent(NoteEvent event) {
+        try {
+            // Отправка в топик с ключом = noteId для гарантированного порядка по заметке
+            CompletableFuture<SendResult<String, NoteEvent>> future = 
+                kafkaTemplate.send(topicName, event.getNoteId().toString(), event);
+            
+            // Блокирующее ожидание (для учебного примера)
+            SendResult<String, NoteEvent> result = future.get();
+            RecordMetadata metadata = result.getRecordMetadata();
+            
+            log.info("Event sent: partition={}, offset={}, timestamp={}", 
+                    metadata.partition(), metadata.offset(), metadata.timestamp());
+            return true;
+            
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Failed to send event: {}", event.getEventId(), e);
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+    
+    /**
+     * Асинхронная отправка с колбэком (рекомендуемый подход)
+     */
+    public void sendNoteEventAsync(NoteEvent event, Runnable onSuccess, Runnable onError) {
+        kafkaTemplate.send(topicName, event.getNoteId().toString(), event)
+            .whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.debug("Async send succeeded: offset={}", 
+                        result.getRecordMetadata().offset());
+                    if (onSuccess != null) onSuccess.run();
+                } else {
+                    log.error("Async send failed", ex);
+                    if (onError != null) onError.run();
+                }
+            });
+    }
+}
+\end{lstlisting}
+
+\subsection{Интеграция с NoteController}
+\begin{lstlisting}[language=Java,caption=Отправка событий из контроллера]
+// В NoteController добавьте:
+private final KafkaProducerService kafkaProducerService;
+
+@PostMapping
+public ResponseEntity<Note> createNote(@RequestBody @Valid NoteCreateDto noteDto) {
+    // ... существующая логика сохранения ...
+    
+    // Отправка события после успешного сохранения
+    var event = NoteEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .noteId(saved.getId())
+        .action("CREATED")
+        .title(saved.getTitle())
+        .timestamp(Instant.now())
+        .userId(getCurrentUserId()) // из SecurityContextHolder
+        .build();
+    
+    kafkaProducerService.sendNoteEventAsync(event, 
+        () -> log.info("Event sent for note {}", saved.getId()),
+        () -> log.warn("Failed to send event for note {}", saved.getId())
+    );
+    
+    return new ResponseEntity<>(saved, HttpStatus.CREATED);
+}
+
+// Аналогично для updateNote и deleteNote с action="UPDATED"/"DELETED"
+\end{lstlisting}
+
+\section{Ручная реализация Kafka Consumer с логированием в файл}
+Для отработки навыков реализуем консьюмер, который читает события и записывает их в файл \textbf{на чистом Java I/O} (без Logback/SLF4J для файла).
+
+\subsection{KafkaConsumerConfig}
+\begin{lstlisting}[language=Java,caption=Конфигурация консьюмера]
+package com.example.demo.config.kafka;
+
+import com.example.demo.dto.kafka.NoteEvent;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Configuration
+public class KafkaConsumerConfig {
+
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
+    @Value("${spring.kafka.consumer.group-id}")
+    private String groupId;
+
+    @Bean
+    public ConsumerFactory<String, NoteEvent> consumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, 
+            "com.example.demo.dto.kafka,com.example.demo.model");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, NoteEvent.class);
+        // Для надёжности в production:
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, NoteEvent> 
+            kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, NoteEvent> factory = 
+            new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
+        factory.setConcurrency(3); // параллельная обработка
+        return factory;
+    }
+}
+\end{lstlisting}
+
+\subsection{NoteEventConsumer с ручным логированием в файл}
+\begin{lstlisting}[language=Java,caption=Консьюмер с записью в файл через Java I/O]
+package com.example.demo.consumer;
+
+import com.example.demo.dto.kafka.NoteEvent;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.stereotype.Component;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Component
+@Slf4j
+public class NoteEventConsumer {
+
+    private static final Path LOG_FILE = Paths.get("kafka-events.log");
+    private static final DateTimeFormatter DT_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /**
+     * Обработчик событий из топика note-events
+     * manual ack для контроля коммита после успешной записи в файл
+     */
+    @KafkaListener(topics = "${kafka.topic.note-events}", groupId = "${spring.kafka.consumer.group-id}")
+    public void consumeNoteEvent(NoteEvent event, Acknowledgment ack) {
+        try {
+            // 1. Обработка события (бизнес-логика)
+            processEvent(event);
+            
+            // 2. Ручная запись в файл на чистом Java I/O (требование задания)
+            writeEventToFile(event);
+            
+            // 3. Подтверждение обработки (ручной коммит)
+            ack.acknowledge();
+            
+        } catch (Exception e) {
+            log.error("Error processing event: {}", event.getEventId(), e);
+            // Не делаем ack — событие будет повторно доставлено
+            // В production: добавить dead-letter queue
+        }
+    }
+
+    private void processEvent(NoteEvent event) {
+        // Пример бизнес-логики: обновление кэша, отправка уведомлений и т.п.
+        log.info("Processing {} event for note #{}", event.getAction(), event.getNoteId());
+    }
+
+    /**
+     * Запись события в файл с использованием стандартного Java I/O
+     * (без использования логгеров для файла — как требовалось в задании)
+     */
+    private void writeEventToFile(NoteEvent event) throws IOException {
+        String logEntry = String.format("[%s] EVENT: id=%s, noteId=%d, action=%s, title='%s', user=%s%n",
+            LocalDateTime.now().format(DT_FORMATTER),
+            event.getEventId(),
+            event.getNoteId(),
+            event.getAction(),
+            event.getTitle(),
+            event.getUserId()
+        );
+        
+        // append = true, создаём файл если не существует
+        try (BufferedWriter writer = Files.newBufferedWriter(
+                LOG_FILE, 
+                StandardOpenOption.CREATE, 
+                StandardOpenOption.APPEND)) {
+            writer.write(logEntry);
+            // flush происходит автоматически при закрытии try-with-resources
+        }
+    }
+}
+\end{lstlisting}
+
+\textbf{Пояснения:}
+\begin{enumerate}
+    \item \texttt{Acknowledgment ack} позволяет вручную подтвердить обработку сообщения (отключите \texttt{enable-auto-commit})
+    \item \texttt{Files.newBufferedWriter} с \texttt{StandardOpenOption.APPEND} обеспечивает потокобезопасную запись
+    \item В production добавьте ротацию логов (например, через \texttt{java.nio.file.attribute.FileAttribute} или внешний логгер)
+    \item Для идемпотентности используйте \texttt{eventId} для фильтрации дубликатов
+\end{enumerate}
+
+\section{Dockerfile для Spring Boot приложения}
+Используем multi-stage build для минимизации размера образа.
+
+\begin{lstlisting}[style=yaml,caption=Dockerfile для Spring Boot]
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk-jammy AS builder
+WORKDIR /app
+
+# Копируем только зависимости для кэширования слоя
+COPY build.gradle.kts settings.gradle.kts ./
+COPY gradle gradle
+COPY gradlew ./
+RUN chmod +x gradlew
+RUN ./gradlew dependencies --no-daemon || true
+
+# Копируем исходный код и собираем
+COPY src ./src
+RUN ./gradlew bootJar -x test --no-daemon
+
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+
+# Создаём non-root пользователя для безопасности
+RUN groupadd -r spring && useradd -r -g spring spring
+USER spring:spring
+
+# Копируем JAR из builder stage
+COPY --from=builder --chown=spring:spring /app/build/libs/*.jar app.jar
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+\end{lstlisting}
+
+\section{Настройка IntelliJ IDEA}
+\subsection{Запуск в контейнерах}
+\begin{enumerate}
+    \item Установите плагин \textbf{Docker} (File → Settings → Plugins)
+    \item Добавьте \texttt{docker-compose.yml} в Docker tool window
+    \item Для отладки: запустите только Kafka-сервисы, а Spring Boot — локально с профилем \texttt{docker}:
+    \begin{itemize}
+        \item Run → Edit Configurations → Spring Boot → VM options: \texttt{-Dspring.profiles.active=docker}
+        \item Environment variables: \texttt{KAFKA\_BOOTSTRAP\_SERVERS=localhost:9094} (EXTERNAL listener)
+    \end{itemize}
+    \item Для полного запуска в Docker: используйте конфигурацию \texttt{docker-compose up}
+\end{enumerate}
+
+\subsection{Отладка Kafka-потребителей}
+\begin{itemize}
+    \item Установите точку останова в \texttt{NoteEventConsumer.consumeNoteEvent()}
+    \item Отправьте событие через REST API или Postman
+    \item IDEA остановится в консьюмере — можно инспектировать \texttt{NoteEvent}
+    \item Проверьте файл \texttt{kafka-events.log} в рабочей директории приложения
+\end{itemize}
+
+\section{Тестирование интеграции}
+\subsection{Проверка через curl}
+\begin{lstlisting}[style=yaml,caption=Тестовые запросы]
+# 1. Регистрация и получение токена
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test1234"}'
+
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test1234"}'
+# Ответ: {"token":"eyJhbGciOiJIUzI1NiJ9..."}
+
+# 2. Создание заметки (триггерит Kafka-событие)
+curl -X POST http://localhost:8080/api/notes \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Note","content":"Hello Kafka!"}'
+
+# 3. Проверка файла с событиями
+docker exec notes-api cat /app/kafka-events.log
+# Или локально, если приложение запущено вне Docker:
+tail -f kafka-events.log
+\end{lstlisting}
+
+\subsection{Мониторинг через Kafka CLI}
+\begin{lstlisting}[style=yaml,caption=Полезные команды для отладки]
+# Подключиться к контейнеру с инструментами:
+docker-compose exec kafka bash
+
+# Просмотр топиков:
+kafka-topics.sh --bootstrap-server kafka:9092 --list
+
+# Чтение сообщений из топика (с начала):
+kafka-console-consumer.sh --bootstrap-server kafka:9092 \
+  --topic note-events \
+  --from-beginning \
+  --property print.key=true \
+  --property print.value=true
+
+# Просмотр лага консьюмера:
+kafka-consumer-groups.sh --bootstrap-server kafka:9092 \
+  --group notes-service-group --describe
+\end{lstlisting}
+
+\section{Рекомендации для production}
+\begin{enumerate}
+    \item \textbf{Безопасность}: замените \texttt{PLAINTEXT} на \texttt{SASL\_SSL} с JWT/SASL аутентификацией
+    \item \textbf{Масштабирование}: разделите роли контроллера и брокера, используйте 3+ ноды для кворума
+    \item \textbf{Надёжность}: включите идемпотентный продюсер (\texttt{enable.idempotence=true}) и транзакции при необходимости
+    \item \textbf{Мониторинг}: подключите Prometheus/Grafana через JMX-экспортер Kafka
+    \item \textbf{Логирование}: замените ручную запись в файл на структурированные логи с ротацией (Logback + FileAppender)
+    \item \textbf{Dead Letter Queue}: настройте \texttt{ErrorHandlingDeserializer} и топик для ошибок
+\end{enumerate}
+
+\section{Заключение}
+Интеграция Kafka в Spring Boot с использованием современного стека (KRaft, Spring Kafka 4.x, Docker) позволяет:
+\begin{itemize}
+    \item Отработать навыки работы с event-driven архитектурой без избыточных абстракций
+    \item Понять внутреннее устройство продюсеров/консьюмеров на практике
+    \item Обеспечить переносимость среды разработки через Docker
+    \item Подготовить основу для масштабирования и добавления сложных сценариев (CQRS, Saga, event sourcing)
+\end{itemize}
+
+Данный подход соответствует современным практикам: отказ от ZooKeeper в пользу KRaft, использование официальных образов Apache/Bitnami, и применение multi-stage Docker-сборки для минимизации attack surface.
+
+\section*{Приложение: Полезные ссылки}
+\begin{itemize}
+    \item Официальная документация Kafka 4.1 (KRaft): \url{https://kafka.apache.org/41/operations/kraft/}
+    \item Spring Kafka Reference: \url{https://docs.spring.io/spring-kafka/docs/4.0.x/reference/html/}
+    \item Docker Compose для Kafka без ZooKeeper: \url{https://theexceptioncatcher.com/2025/06/kafka-in-2025-a-clean-docker-compose-setup-without-zookeeper/}
+    \item Multi-stage builds для Spring Boot: \url{https://bjoernkw.com/2025/02/02/a-guide-to-docker-multi-stage-builds-for-spring-boot-by-catherine-edelveis/}
+\end{itemize}
+
+\end{document}
